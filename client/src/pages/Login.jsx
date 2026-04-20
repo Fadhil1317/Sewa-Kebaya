@@ -35,9 +35,9 @@ const Login = () => {
           <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Kembali ke Katalog</span>
         </button>
 
-        <div className="bg-white p-10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-stone-100 relative overflow-hidden">
+        <div className="bg-white p-10 rounded-4xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-stone-100 relative overflow-hidden">
           {/* Garis Aksen Emas di Atas */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-700 via-amber-500 to-amber-900"></div>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-linear-to-r from-amber-700 via-amber-500 to-amber-900"></div>
 
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-stone-50 rounded-2xl mb-6 border border-stone-100 shadow-inner">

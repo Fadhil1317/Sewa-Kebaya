@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 // import dns from "node:dns/promises";
 
+
 // FIX DNS: Mencegah error ECONNREFUSED pada jaringan tertentu di Indonesia
 // dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
