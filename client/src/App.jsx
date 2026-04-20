@@ -23,7 +23,7 @@ function App() {
 
   // 1. Fetch Data Produk
   useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL; // Vite pakai cara ini
+    const API_URL = import.meta.env.VITE_API_URL;
     fetch(`${API_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => setDbProducts(data))
@@ -32,7 +32,6 @@ function App() {
 
   // 2. LOGIKA SMOOTH SCROLL SAAT SEARCHING
   useEffect(() => {
-    // Jika user mengetik sesuatu (minimal 1 karakter), scroll ke katalog
     if (searchTerm.length > 2) {
       const element = document.getElementById("katalog-produk");
       if (element) {
@@ -74,7 +73,6 @@ function App() {
 
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
-    // Scroll otomatis ke bagian katalog agar user tidak bingung saat pindah page
     document
       .getElementById("katalog-produk")
       ?.scrollIntoView({ behavior: "smooth" });
@@ -124,35 +122,50 @@ function App() {
                         ))}
                       </div>
 
-                      {/* --- KONTROL PAGINATION --- */}
+                      {/* --- KONTROL PAGINATION (Limit 5) --- */}
                       {totalPages > 1 && (
-                        <div className="flex justify-center items-center mt-16 gap-2">
+                        <div className="flex justify-center items-center mt-16 gap-1 md:gap-2">
                           <button
                             onClick={() => paginate(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-stone-400 disabled:opacity-30 hover:text-amber-900 transition-colors"
+                            className="px-2 md:px-4 py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-stone-400 disabled:opacity-30 hover:text-amber-900 transition-colors"
                           >
                             Prev
                           </button>
 
-                          {[...Array(totalPages)].map((_, i) => (
-                            <button
-                              key={i + 1}
-                              onClick={() => paginate(i + 1)}
-                              className={`w-10 h-10 rounded-full text-xs font-bold transition-all duration-300 ${
-                                currentPage === i + 1
-                                  ? "bg-amber-900 text-white shadow-lg"
-                                  : "bg-white text-stone-500 border border-stone-100 hover:border-amber-700"
-                              }`}
-                            >
-                              {i + 1}
-                            </button>
-                          ))}
+                          {(() => {
+                            // Hitung range halaman yang tampil (max 5)
+                            let startPage = Math.max(1, currentPage - 2);
+                            let endPage = Math.min(totalPages, startPage + 4);
+
+                            if (endPage - startPage < 4) {
+                              startPage = Math.max(1, endPage - 4);
+                            }
+
+                            const pageNumbers = [];
+                            for (let i = startPage; i <= endPage; i++) {
+                              pageNumbers.push(i);
+                            }
+
+                            return pageNumbers.map((number) => (
+                              <button
+                                key={number}
+                                onClick={() => paginate(number)}
+                                className={`w-9 h-9 md:w-10 md:h-10 rounded-full text-xs font-bold transition-all duration-300 ${
+                                  currentPage === number
+                                    ? "bg-amber-900 text-white shadow-lg"
+                                    : "bg-white text-stone-500 border border-stone-100 hover:border-amber-700"
+                                }`}
+                              >
+                                {number}
+                              </button>
+                            ));
+                          })()}
 
                           <button
                             onClick={() => paginate(currentPage + 1)}
                             disabled={currentPage === totalPages}
-                            className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-stone-400 disabled:opacity-30 hover:text-amber-900 transition-colors"
+                            className="px-2 md:px-4 py-2 text-[10px] md:text-xs font-bold uppercase tracking-widest text-stone-400 disabled:opacity-30 hover:text-amber-900 transition-colors"
                           >
                             Next
                           </button>
@@ -174,11 +187,7 @@ function App() {
         </Routes>
       </div>
 
-      {!isAdminPage && (
-        <>
-          <Footer />
-        </>
-      )}
+      {!isAdminPage && <Footer />}
     </div>
   );
 }
