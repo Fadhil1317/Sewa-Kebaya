@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { 
   Package, LogOut, PlusCircle, Edit3, Trash2, 
   CreditCard, LayoutDashboard, Search, 
-  CheckCircle2, AlertCircle, Users, Printer, X
+  CheckCircle2, AlertCircle, Users, Printer, X, Menu
 } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -16,6 +16,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
   const [adminSearchTerm, setAdminSearchTerm] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State baru untuk mobile menu
   
   const [form, setForm] = useState({
     name: "", price: "", category: "", description: "", image: "", isAvailable: true 
@@ -39,7 +40,6 @@ const AdminDashboard = () => {
     fetchTransactions();
   };
 
-  // 1. UPDATE FETCH PRODUK
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
@@ -48,7 +48,6 @@ const AdminDashboard = () => {
     } catch (err) { console.error(err); }
   };
 
-  // 2. UPDATE FETCH TRANSAKSI
   const fetchTransactions = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`);
@@ -68,7 +67,6 @@ const AdminDashboard = () => {
   const handleSubmitProduct = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // 3. UPDATE URL SUBMIT PRODUK
     const url = editId 
       ? `${import.meta.env.VITE_API_URL}/api/products/${editId}` 
       : `${import.meta.env.VITE_API_URL}/api/products`;
@@ -91,7 +89,6 @@ const AdminDashboard = () => {
 
   const handleDeleteProduct = async (id) => {
     if (window.confirm("Hapus produk ini secara permanen?")) {
-      // 4. UPDATE DELETE PRODUK
       await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`, { method: "DELETE" });
       fetchProducts();
     }
@@ -110,7 +107,6 @@ const AdminDashboard = () => {
   const handleSubmitTransaction = async (e) => {
     e.preventDefault();
     try {
-      // 5. UPDATE POST TRANSAKSI
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,7 +114,6 @@ const AdminDashboard = () => {
       });
 
       if (res.ok) {
-        // 6. UPDATE STATUS PRODUK SETELAH SEWA
         await fetch(`${import.meta.env.VITE_API_URL}/api/products/${transForm.productId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -134,7 +129,6 @@ const AdminDashboard = () => {
   const handleCancelTransaction = async (t) => {
     if (window.confirm(`Batalkan sewa ${t.customerName}? Produk akan kembali 'Ready'.`)) {
       try {
-        // 7. UPDATE DELETE TRANSAKSI & KEMBALIKAN STATUS PRODUK
         await fetch(`${import.meta.env.VITE_API_URL}/api/transactions/${t._id}`, { method: "DELETE" });
         
         await fetch(`${import.meta.env.VITE_API_URL}/api/products/${t.productId}`, {
@@ -148,7 +142,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // FITUR BARU: CETAK NOTA (Tanpa Fetch, hanya HTML)
   const handlePrintNota = (t) => {
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -188,17 +181,29 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FDFCF8] font-sans text-stone-800">
+    <div className="flex min-h-screen bg-[#FDFCF8] font-sans text-stone-800 relative">
+      {/* OVERLAY UNTUK MOBILE SIDEBAR */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 lg:hidden" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className="w-64 bg-stone-950 text-stone-400 hidden lg:flex flex-col sticky top-0 h-screen border-r border-amber-900/20">
-        <div className="p-8 text-amber-500 font-serif text-2xl font-bold border-b border-stone-900">
-          Kebaya<span className="text-stone-100 font-light text-xl">Klasik</span>
+      <aside className={`
+        w-64 bg-stone-950 text-stone-400 flex flex-col fixed lg:sticky top-0 h-screen border-r border-amber-900/20 z-50 transition-transform duration-300
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="p-8 text-amber-500 font-serif text-2xl font-bold border-b border-stone-900 flex justify-between items-center">
+          <div>Kebaya<span className="text-stone-100 font-light text-xl">Klasik</span></div>
+          <button className="lg:hidden text-stone-400" onClick={() => setIsSidebarOpen(false)}><X size={24}/></button>
         </div>
         <nav className="grow p-6 space-y-3 mt-4">
-          <button onClick={() => setActiveTab('katalog')} className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 transition-all ${activeTab === 'katalog' ? 'bg-amber-900/20 text-amber-500 border border-amber-900/30' : 'hover:text-stone-200'}`}>
+          <button onClick={() => { setActiveTab('katalog'); setIsSidebarOpen(false); }} className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 transition-all ${activeTab === 'katalog' ? 'bg-amber-900/20 text-amber-500 border border-amber-900/30' : 'hover:text-stone-200'}`}>
             <Package size={18} /> <span className="text-sm font-bold uppercase tracking-wider">Katalog</span>
           </button>
-          <button onClick={() => setActiveTab('transaksi')} className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 transition-all ${activeTab === 'transaksi' ? 'bg-amber-900/20 text-amber-500 border border-amber-900/30' : 'hover:text-stone-200'}`}>
+          <button onClick={() => { setActiveTab('transaksi'); setIsSidebarOpen(false); }} className={`w-full px-4 py-3 rounded-xl flex items-center gap-3 transition-all ${activeTab === 'transaksi' ? 'bg-amber-900/20 text-amber-500 border border-amber-900/30' : 'hover:text-stone-200'}`}>
             <CreditCard size={18} /> <span className="text-sm font-bold uppercase tracking-wider">Riwayat Sewa</span>
           </button>
           <button onClick={() => { localStorage.removeItem("isAdmin"); navigate("/login"); }} className="w-full mt-10 px-4 py-3 text-stone-500 hover:text-red-400 flex items-center gap-3">
@@ -207,23 +212,26 @@ const AdminDashboard = () => {
         </nav>
       </aside>
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* HEADER */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b flex items-center justify-between px-10 sticky top-0 z-40">
-          <h2 className="text-stone-800 font-serif text-lg">{activeTab === 'katalog' ? 'Manajemen Koleksi' : 'Log Transaksi'}</h2>
-          <div className="flex gap-6">
-             <div className="text-right"><p className="text-[10px] text-stone-400 uppercase font-bold">Produk</p><p className="text-xl font-serif text-amber-900">{products.length}</p></div>
-             <div className="text-right border-l pl-6 border-stone-200"><p className="text-[10px] text-stone-400 uppercase font-bold">Total Transaksi</p><p className="text-xl font-serif text-amber-900">{transactions.length}</p></div>
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b flex items-center justify-between px-4 lg:px-10 sticky top-0 z-40">
+          <div className="flex items-center gap-4">
+            <button className="lg:hidden p-2 text-stone-600" onClick={() => setIsSidebarOpen(true)}><Menu size={24}/></button>
+            <h2 className="text-stone-800 font-serif text-base lg:text-lg truncate">{activeTab === 'katalog' ? 'Manajemen Koleksi' : 'Log Transaksi'}</h2>
+          </div>
+          <div className="flex gap-3 lg:gap-6">
+             <div className="text-right"><p className="text-[8px] lg:text-[10px] text-stone-400 uppercase font-bold">Produk</p><p className="text-base lg:text-xl font-serif text-amber-900">{products.length}</p></div>
+             <div className="text-right border-l pl-3 lg:pl-6 border-stone-200"><p className="text-[8px] lg:text-[10px] text-stone-400 uppercase font-bold">Total Transaksi</p><p className="text-base lg:text-xl font-serif text-amber-900">{transactions.length}</p></div>
           </div>
         </header>
 
-        <main className="p-10 max-w-350 mx-auto w-full">
+        <main className="p-4 lg:p-10 max-w-full mx-auto w-full overflow-x-hidden">
           {activeTab === 'katalog' ? (
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-10">
               {/* FORM PRODUK */}
-              <section className="xl:col-span-4">
-                <div className="p-8 rounded-3xl border bg-white shadow-xl sticky top-28">
-                  <h3 className="text-xl font-serif mb-8 flex items-center gap-3">{editId ? <Edit3/> : <PlusCircle/>} {editId ? "Edit" : "Tambah"} Produk</h3>
+              <section className="xl:col-span-4 order-2 xl:order-1">
+                <div className="p-6 lg:p-8 rounded-3xl border bg-white shadow-xl xl:sticky xl:top-28">
+                  <h3 className="text-lg lg:text-xl font-serif mb-6 lg:mb-8 flex items-center gap-3">{editId ? <Edit3/> : <PlusCircle/>} {editId ? "Edit" : "Tambah"} Produk</h3>
                   <form onSubmit={handleSubmitProduct} className="space-y-4">
                     <input type="text" placeholder="Nama Produk" className="w-full bg-stone-50 p-3.5 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 text-sm" value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} required />
                     <input type="number" placeholder="Harga Sewa" className="w-full bg-stone-50 p-3.5 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 text-sm" value={form.price} onChange={(e)=>setForm({...form, price:e.target.value})} required />
@@ -236,56 +244,64 @@ const AdminDashboard = () => {
               </section>
 
               {/* TABEL PRODUK */}
-              <section className="xl:col-span-8 space-y-6">
+              <section className="xl:col-span-8 space-y-6 order-1 xl:order-2">
                 <div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} /><input type="text" placeholder="Cari..." className="w-full bg-white border py-4 pl-12 pr-6 rounded-2xl outline-none" value={adminSearchTerm} onChange={(e)=>setAdminSearchTerm(e.target.value)} /></div>
                 <div className="bg-white rounded-3xl border shadow-xl overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead className="bg-stone-50 text-[10px] uppercase tracking-widest border-b"><tr><th className="px-8 py-5">Produk</th><th className="px-8 py-5">Status</th><th className="px-8 py-5 text-right">Aksi</th></tr></thead>
-                    <tbody className="divide-y">
-                      {filteredAdminProducts.map(p => (
-                        <tr key={p._id} className="hover:bg-amber-50/30 transition-colors">
-                          <td className="px-8 py-5">
-                            <div className="flex items-center gap-4">
-                              <img src={p.image} className="w-12 h-12 rounded-lg object-cover" />
-                              <div><p className="font-bold text-sm">{p.name}</p><p className="text-amber-700 text-xs">Rp {p.price?.toLocaleString()}</p></div>
-                            </div>
-                          </td>
-                          <td className="px-8 py-5">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${p.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.isAvailable ? 'Ready' : 'Disewa'}</span>
-                          </td>
-                          <td className="px-8 py-5 text-right flex justify-end gap-2">
-                             {p.isAvailable && <button onClick={()=>handleOpenTransModal(p)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"><Users size={16}/></button>}
-                             <button onClick={()=>{setEditId(p._id); setForm(p);}} className="p-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-600 hover:text-white transition-all"><Edit3 size={16}/></button>
-                             <button onClick={()=>handleDeleteProduct(p._id)} className="p-2 bg-red-50 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16}/></button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="overflow-x-auto"> {/* Wrapper scroll horizontal */}
+                    <table className="w-full text-left min-w-150">
+                      <thead className="bg-stone-50 text-[10px] uppercase tracking-widest border-b"><tr><th className="px-8 py-5">Produk</th><th className="px-8 py-5">Status</th><th className="px-8 py-5 text-right">Aksi</th></tr></thead>
+                      <tbody className="divide-y">
+                        {filteredAdminProducts.map(p => (
+                          <tr key={p._id} className="hover:bg-amber-50/30 transition-colors">
+                            <td className="px-8 py-5">
+                              <div className="flex items-center gap-4">
+                                <img src={p.image} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                                <div><p className="font-bold text-sm line-clamp-1">{p.name}</p><p className="text-amber-700 text-xs">Rp {p.price?.toLocaleString()}</p></div>
+                              </div>
+                            </td>
+                            <td className="px-8 py-5">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${p.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.isAvailable ? 'Ready' : 'Disewa'}</span>
+                            </td>
+                            <td className="px-8 py-5 text-right">
+                               <div className="flex justify-end gap-2">
+                                {p.isAvailable && <button onClick={()=>handleOpenTransModal(p)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"><Users size={16}/></button>}
+                                <button onClick={()=>{setEditId(p._id); setForm(p); window.scrollTo({top: 0, behavior: 'smooth'});}} className="p-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-600 hover:text-white transition-all"><Edit3 size={16}/></button>
+                                <button onClick={()=>handleDeleteProduct(p._id)} className="p-2 bg-red-50 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16}/></button>
+                               </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </section>
             </div>
           ) : (
             /* TABEL TRANSAKSI */
             <section className="bg-white rounded-3xl border shadow-xl overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-stone-50 text-[10px] uppercase tracking-widest border-b">
-                  <tr><th className="px-8 py-5">Penyewa</th><th className="px-8 py-5">Produk</th><th className="px-8 py-5">Total</th><th className="px-8 py-5 text-right">Aksi</th></tr>
-                </thead>
-                <tbody className="divide-y">
-                  {transactions.map(t => (
-                    <tr key={t._id}>
-                      <td className="px-8 py-5"><p className="font-bold text-sm">{t.customerName}</p><p className="text-xs text-stone-400">{t.customerWhatsapp}</p></td>
-                      <td className="px-8 py-5"><p className="text-sm">{t.productName}</p><p className="text-[10px] text-amber-600 font-bold uppercase">{t.duration} Hari</p></td>
-                      <td className="px-8 py-5 font-bold text-sm">Rp {t.totalPrice?.toLocaleString()}</td>
-                      <td className="px-8 py-5 text-right flex justify-end gap-2">
-                         <button onClick={()=>handlePrintNota(t)} className="p-2.5 bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-900 hover:text-white transition-all"><Printer size={16}/></button>
-                         <button onClick={()=>handleCancelTransaction(t)} className="p-2.5 bg-red-50 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto"> {/* Wrapper scroll horizontal */}
+                <table className="w-full text-left min-w-175">
+                  <thead className="bg-stone-50 text-[10px] uppercase tracking-widest border-b">
+                    <tr><th className="px-8 py-5">Penyewa</th><th className="px-8 py-5">Produk</th><th className="px-8 py-5">Total</th><th className="px-8 py-5 text-right">Aksi</th></tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {transactions.map(t => (
+                      <tr key={t._id}>
+                        <td className="px-8 py-5"><p className="font-bold text-sm">{t.customerName}</p><p className="text-xs text-stone-400">{t.customerWhatsapp}</p></td>
+                        <td className="px-8 py-5"><p className="text-sm line-clamp-1">{t.productName}</p><p className="text-[10px] text-amber-600 font-bold uppercase">{t.duration} Hari</p></td>
+                        <td className="px-8 py-5 font-bold text-sm">Rp {t.totalPrice?.toLocaleString()}</td>
+                        <td className="px-8 py-5 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={()=>handlePrintNota(t)} className="p-2.5 bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-900 hover:text-white transition-all"><Printer size={16}/></button>
+                            <button onClick={()=>handleCancelTransaction(t)} className="p-2.5 bg-red-50 text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all"><Trash2 size={16}/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
         </main>
@@ -293,13 +309,13 @@ const AdminDashboard = () => {
 
       {/* MODAL INPUT TRANSAKSI */}
       {showTransModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-stone-900/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden">
-            <div className="bg-stone-950 p-8 text-white flex justify-between items-center">
-              <div><h3 className="text-2xl font-serif">Catat Sewa</h3><p className="text-stone-400 text-[10px] uppercase mt-1">{transForm.productName}</p></div>
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 lg:p-6 bg-stone-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-4xl lg:rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="bg-stone-950 p-6 lg:p-8 text-white flex justify-between items-center sticky top-0 z-10">
+              <div><h3 className="text-xl lg:text-2xl font-serif">Catat Sewa</h3><p className="text-stone-400 text-[10px] uppercase mt-1 line-clamp-1">{transForm.productName}</p></div>
               <button onClick={()=>setShowTransModal(false)}><X size={20}/></button>
             </div>
-            <form onSubmit={handleSubmitTransaction} className="p-8 space-y-4">
+            <form onSubmit={handleSubmitTransaction} className="p-6 lg:p-8 space-y-4">
               <input type="text" placeholder="Nama Pelanggan" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.customerName} onChange={(e)=>setTransForm({...transForm, customerName:e.target.value})} required />
               <input type="text" placeholder="WhatsApp" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.customerWhatsapp} onChange={(e)=>setTransForm({...transForm, customerWhatsapp:e.target.value})} required />
               <div className="grid grid-cols-2 gap-4">
@@ -312,7 +328,7 @@ const AdminDashboard = () => {
               </div>
               <div className="p-5 bg-amber-50 rounded-2xl flex justify-between items-center">
                 <span className="text-xs font-bold uppercase text-amber-900">Total</span>
-                <span className="font-serif font-bold text-amber-900 text-xl">Rp {transForm.totalPrice.toLocaleString()}</span>
+                <span className="font-serif font-bold text-amber-900 text-lg lg:text-xl">Rp {transForm.totalPrice.toLocaleString()}</span>
               </div>
               <button type="submit" className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg">Simpan & Update Status</button>
             </form>
