@@ -15,15 +15,15 @@ app.use(cors());
 app.use(express.json());
 
 // --- KONEKSI DATABASE ---
-const MONGO_URI = "mongodb+srv://admin_kebaya:kebayaku123@clusterkebaya.fw96hxt.mongodb.net/sewa-kebaya?appName=ClusterKebaya"; 
+// Gunakan process.env.MONGO_URI agar lebih aman saat deploy
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://admin_kebaya:kebayaku123@clusterkebaya.fw96hxt.mongodb.net/sewa-kebaya?appName=ClusterKebaya"; 
 
 mongoose.connect(MONGO_URI)
-  .then(() => console.log("🔥 Database Terhubung (Jakarta Cloud)!"))
+  .then(() => console.log("🔥 Database Terhubung!"))
   .catch((err) => console.log("❌ Gagal Connect DB:", err));
 
 // --- SKEMA DATA & MODEL ---
 
-// 1. Model Produk
 const productSchema = new mongoose.Schema({
   name: String,
   price: Number,
@@ -33,26 +33,24 @@ const productSchema = new mongoose.Schema({
   isAvailable: { type: Boolean, default: true }
 }, { timestamps: true });
 
-const Product = mongoose.model('Product', productSchema);
+const Product = mongoose.model('Product', productSchema || mongoose.models.Product);
 
-// 2. Model Transaksi
 const transactionSchema = new mongoose.Schema({
   customerName: String,
   customerWhatsapp: String,
   productName: String,
-  productId: { type: String, required: true }, // ID Produk terkait
+  productId: { type: String, required: true },
   startDate: String,
   duration: Number,
   totalPrice: Number,
   status: { type: String, default: 'Sedang Disewa' },
 }, { timestamps: true });
 
-const Transaction = mongoose.model('Transaction', transactionSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema || mongoose.models.Transaction);
 
 
-// --- API ROUTES PRODUK ---
+// --- API ROUTES ---
 
-// Get All Products
 app.get('/api/products', async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
@@ -62,7 +60,6 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-// Add New Product
 app.post('/api/products', async (req, res) => {
   try {
     const newProduct = new Product(req.body);
@@ -73,36 +70,24 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-// Update Product (Edit / Change Availability)
 app.put('/api/products/:id', async (req, res) => {
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id, 
-      req.body, 
-      { new: true }
-    );
-    if (!updatedProduct) return res.status(404).json({ message: "Produk tidak ditemukan" });
+    const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updatedProduct);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-// Delete Product
 app.delete('/api/products/:id', async (req, res) => {
   try {
-    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
-    if (!deletedProduct) return res.status(404).json({ message: "Produk tidak ditemukan" });
-    res.json({ message: "Produk berhasil dihapus" });
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ message: "Produk dihapus" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-
-// --- API ROUTES TRANSAKSI ---
-
-// Get All Transactions
 app.get('/api/transactions', async (req, res) => {
   try {
     const transactions = await Transaction.find().sort({ createdAt: -1 });
@@ -112,7 +97,6 @@ app.get('/api/transactions', async (req, res) => {
   }
 });
 
-// Create New Transaction
 app.post('/api/transactions', async (req, res) => {
   try {
     const newTransaction = new Transaction(req.body);
@@ -123,27 +107,28 @@ app.post('/api/transactions', async (req, res) => {
   }
 });
 
-// Delete Transaction (Batalkan Sewa)
 app.delete('/api/transactions/:id', async (req, res) => {
   try {
-    const deleted = await Transaction.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Transaksi tidak ditemukan" });
-    res.json({ message: "Transaksi berhasil dihapus" });
+    await Transaction.findByIdAndDelete(req.params.id);
+    res.json({ message: "Transaksi dihapus" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-
-// --- SERVER LAUNCH ---
-
 app.get('/', (req, res) => {
   res.send('API Sewa Kebaya UMKM Running...');
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server lari di http://localhost:${PORT}`);
-});
+// --- SERVER LAUNCH (PENYESUAIAN VERCEL) ---
 
+// Hanya jalankan app.listen jika tidak sedang dideploy di Vercel
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server lokal jalan di http://localhost:${PORT}`);
+  });
+}
+
+// Penting untuk Vercel:
 export default app;
