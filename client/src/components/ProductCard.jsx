@@ -10,19 +10,23 @@ const ProductCard = ({ product }) => {
       className={`group cursor-pointer bg-white rounded-t-3xl overflow-hidden border border-stone-200 transition-all duration-500 hover:border-amber-700/50 hover:shadow-2xl 
         ${!isAvailable ? 'opacity-60 grayscale-[0.8]' : ''}`}
     >
-      {/* Container Gambar: Dibuat aspect-square (1:1) agar tinggi card seragam */}
-      <div className="relative aspect-square bg-[#F9F6F0] flex items-center justify-center p-4 overflow-hidden">
+      {/* Container Gambar: 
+        1. Kami ubah dari aspect-square (1:1) menjadi aspect-[3/4] agar lebih tinggi, cocok untuk gambar portrait.
+        2. Kami hilangkan p-4 (padding) agar gambar bisa menyentuh border container secara horizontal.
+      */}
+      <div className="relative aspect-3/4 w-full bg-[#F9F6F0] flex items-center justify-center overflow-hidden">
         {/* Dekorasi Batik */}
         <div className="absolute inset-0 opacity-5 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/batik-fractal.png')]"></div>
         
-        {/* GAMBAR: 
-          - h-full w-full + object-contain: Memastikan gambar muat di dalam kotak 
-            tanpa terpotong & tetap proporsional (fit).
+        {/* GAMBAR:
+          - w-full h-full + object-contain: Menjamin gambar utuh terlihat 100%.
+          - Karena aspect ratio container (3/4) lebih dekat dengan format foto, white space horizontal akan hilang atau jauh berkurang.
+          - hover:scale-110 kami kurangi menjadi hover:scale-105 agar pembesaran lebih halus di aspect ratio baru.
         */}
         <img 
           src={product.image} 
           alt={product.name}
-          className={`relative z-10 w-full h-full object-contain transition-transform duration-700 group-hover:scale-110 
+          className={`relative z-10 w-full h-full object-contain transition-transform duration-700 group-hover:scale-105 
             ${!isAvailable ? 'scale-90' : ''}`}
         />
         
@@ -42,7 +46,8 @@ const ProductCard = ({ product }) => {
       </div>
 
       <div className="p-5 text-center bg-white">
-        <h3 className={`text-sm font-serif font-semibold transition-colors duration-300 line-clamp-1
+        {/* line-clamp-2 agar jika nama produk panjang tidak berantakan tapi masih terbaca */}
+        <h3 className={`text-sm font-serif font-semibold transition-colors duration-300 line-clamp-2 h-10
           ${isAvailable ? 'text-stone-800 group-hover:text-amber-900' : 'text-stone-400'}`}>
           {product.name}
         </h3>
