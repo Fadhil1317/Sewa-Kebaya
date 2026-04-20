@@ -42,7 +42,7 @@ const AdminDashboard = () => {
   // 1. UPDATE FETCH PRODUK
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/products`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
       const data = await res.json();
       setProducts(data);
     } catch (err) { console.error(err); }
@@ -51,7 +51,7 @@ const AdminDashboard = () => {
   // 2. UPDATE FETCH TRANSAKSI
   const fetchTransactions = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/transactions`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`);
       const data = await res.json();
       setTransactions(data);
     } catch (err) { console.error(err); }
@@ -70,8 +70,8 @@ const AdminDashboard = () => {
     setLoading(true);
     // 3. UPDATE URL SUBMIT PRODUK
     const url = editId 
-      ? `${process.env.REACT_APP_API_URL}/api/products/${editId}` 
-      : `${process.env.REACT_APP_API_URL}/api/products`;
+      ? `${import.meta.env.VITE_API_URL}/api/products/${editId}` 
+      : `${import.meta.env.VITE_API_URL}/api/products`;
       
     try {
       const res = await fetch(url, {
@@ -92,7 +92,7 @@ const AdminDashboard = () => {
   const handleDeleteProduct = async (id) => {
     if (window.confirm("Hapus produk ini secara permanen?")) {
       // 4. UPDATE DELETE PRODUK
-      await fetch(`${process.env.REACT_APP_API_URL}/api/products/${id}`, { method: "DELETE" });
+      await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`, { method: "DELETE" });
       fetchProducts();
     }
   };
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       // 5. UPDATE POST TRANSAKSI
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/transactions`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(transForm),
@@ -119,7 +119,7 @@ const AdminDashboard = () => {
 
       if (res.ok) {
         // 6. UPDATE STATUS PRODUK SETELAH SEWA
-        await fetch(`${process.env.REACT_APP_API_URL}/api/products/${transForm.productId}`, {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/products/${transForm.productId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ isAvailable: false }), 
@@ -135,9 +135,9 @@ const AdminDashboard = () => {
     if (window.confirm(`Batalkan sewa ${t.customerName}? Produk akan kembali 'Ready'.`)) {
       try {
         // 7. UPDATE DELETE TRANSAKSI & KEMBALIKAN STATUS PRODUK
-        await fetch(`${process.env.REACT_APP_API_URL}/api/transactions/${t._id}`, { method: "DELETE" });
+        await fetch(`${import.meta.env.VITE_API_URL}/api/transactions/${t._id}`, { method: "DELETE" });
         
-        await fetch(`${process.env.REACT_APP_API_URL}/api/products/${t.productId}`, {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/products/${t.productId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ isAvailable: true }), 
