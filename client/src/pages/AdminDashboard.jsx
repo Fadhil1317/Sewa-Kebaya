@@ -7,7 +7,7 @@ import {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const formRef = useRef(null); // Untuk smooth scroll
+  const formRef = useRef(null);
 
   // --- STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState('katalog'); 
@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   const [editId, setEditId] = useState(null);
   const [adminSearchTerm, setAdminSearchTerm] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(true); // Toggle form di mobile
+  const [isFormOpen, setIsFormOpen] = useState(true);
   const [isEditingGlow, setIsEditingGlow] = useState(false);
   
   const [form, setForm] = useState({
@@ -61,7 +61,7 @@ const AdminDashboard = () => {
   const filteredAdminProducts = useMemo(() => {
     return products.filter(p => 
       p.name.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(adminSearchTerm.toLowerCase())
+      (p.category && p.category.toLowerCase().includes(adminSearchTerm.toLowerCase()))
     );
   }, [products, adminSearchTerm]);
 
@@ -71,11 +71,7 @@ const AdminDashboard = () => {
     setForm(p);
     setIsFormOpen(true);
     setIsEditingGlow(true);
-    
-    // Smooth Scroll ke Form
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
-    // Hilangkan efek glow setelah 3 detik
     setTimeout(() => setIsEditingGlow(false), 3000);
   };
 
@@ -206,7 +202,7 @@ const AdminDashboard = () => {
           {activeTab === 'katalog' ? (
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
               
-              {/* FORM SECTION - COLLAPSIBLE ON MOBILE */}
+              {/* FORM SECTION */}
               <section ref={formRef} className="xl:col-span-4 order-1 xl:order-2">
                 <div className={`transition-all duration-500 rounded-3xl border bg-white shadow-xl overflow-hidden ${isEditingGlow ? 'ring-4 ring-amber-500 shadow-[0_0_25px_rgba(245,158,11,0.4)]' : ''}`}>
                   <button 
@@ -244,23 +240,36 @@ const AdminDashboard = () => {
               <section className="xl:col-span-8 order-2 xl:order-1 space-y-6">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-                  <input type="text" placeholder="Cari kebaya..." className="w-full bg-white border py-4 pl-12 pr-6 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-amber-500/20" value={adminSearchTerm} onChange={(e)=>setAdminSearchTerm(e.target.value)} />
+                  <input type="text" placeholder="Cari kebaya atau kategori..." className="w-full bg-white border py-4 pl-12 pr-6 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-amber-500/20" value={adminSearchTerm} onChange={(e)=>setAdminSearchTerm(e.target.value)} />
                 </div>
 
                 <div className="bg-white rounded-3xl border shadow-xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left min-w-150">
                       <thead className="bg-stone-50 text-[10px] uppercase tracking-widest border-b">
-                        <tr><th className="px-8 py-5">Produk</th><th className="px-8 py-5">Status</th><th className="px-8 py-5 text-right">Aksi</th></tr>
+                        <tr>
+                          <th className="px-8 py-5">Produk</th>
+                          <th className="px-8 py-5">Kategori</th>
+                          <th className="px-8 py-5">Status</th>
+                          <th className="px-8 py-5 text-right">Aksi</th>
+                        </tr>
                       </thead>
                       <tbody className="divide-y">
                         {filteredAdminProducts.map(p => (
                           <tr key={p._id} className="hover:bg-amber-50/30 transition-colors">
                             <td className="px-8 py-5">
                               <div className="flex items-center gap-4">
-                                <img src={p.image} className="w-12 h-12 rounded-lg object-cover bg-stone-100" />
-                                <div><p className="font-bold text-sm">{p.name}</p><p className="text-amber-700 text-xs">Rp {p.price?.toLocaleString()}</p></div>
+                                <img src={p.image} className="w-12 h-12 rounded-lg object-cover bg-stone-100" alt={p.name} />
+                                <div>
+                                  <p className="font-bold text-sm">{p.name}</p>
+                                  <p className="text-amber-700 text-xs">Rp {p.price?.toLocaleString()}</p>
+                                </div>
                               </div>
+                            </td>
+                            <td className="px-8 py-5">
+                              <span className="text-[11px] font-medium text-stone-500 bg-stone-100 px-2.5 py-1 rounded-md">
+                                {p.category || "Tanpa Kategori"}
+                              </span>
                             </td>
                             <td className="px-8 py-5">
                               <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${p.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -324,7 +333,7 @@ const AdminDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <input type="date" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.startDate} onChange={(e)=>setTransForm({...transForm, startDate:e.target.value})} required />
                 <input type="number" placeholder="Hari" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.duration} onChange={(e)=>{
-                  const d = e.target.value;
+                  const d = parseInt(e.target.value) || 0;
                   const p = products.find(prod => prod._id === transForm.productId);
                   setTransForm({...transForm, duration:d, totalPrice: d * (p?.price || 0)});
                 }} required />
