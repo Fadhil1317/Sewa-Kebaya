@@ -13,7 +13,7 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [duration, setDuration] = useState(1); // State untuk durasi sewa
+  const [duration, setDuration] = useState(3); // State untuk durasi sewa
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -59,24 +59,31 @@ const ProductDetail = () => {
     );
 
   const isAvailable = product.isAvailable !== false;
-  const totalPrice = (product.price || 0) * duration;
+  const extraDayPrice = Math.round((product.price || 0) / 3);
+
+  const totalPrice = duration <= 3 
+  ? (product.price || 0) 
+  : (product.price || 0) + ((duration - 3) * extraDayPrice);
 
   const handleWhatsAppChat = () => {
+  const extraDays = duration > 3 ? duration - 3 : 0;
+  const extraCharge = extraDays * Math.round((product.price || 0) / 3);
     const message = encodeURIComponent(
       `📜 *RESERVASI SEWA KEBAYA* 📜\n` +
         `----------------------------------\n` +
         `*Produk:* ${product.name}\n` +
         `*Kategori:* ${product.category}\n` +
         `----------------------------------\n` +
-        `*Durasi:* ${duration} Hari\n` +
-        `*Harga/Hari:* Rp ${product.price?.toLocaleString()}\n` +
+        `*Durasi Sewa:* ${duration} Hari\n` +
+        `*Harga Paket (3 Hari):* Rp ${product.price?.toLocaleString()}\n` +
+        `*Tambahan Hari:* ${extraDays} Hari (+Rp ${extraCharge.toLocaleString()})\n` +
         `*ESTIMASI TOTAL:* Rp ${totalPrice.toLocaleString()}\n` +
         `----------------------------------\n\n` +
         `*Foto Produk:* ${product.image}\n` +
         `*Link Katalog:* ${window.location.href}\n\n` +
         `Halo Admin, saya ingin menanyakan ketersediaan kebaya ini untuk durasi ${duration} hari. Apakah masih kosong?`,
     );
-    window.open(`https://wa.me/6281393413417?text=${message}`, "_blank");
+    window.open(`https://wa.me/6285875977960?text=${message}`, "_blank");
   };
 
   return (
@@ -173,12 +180,12 @@ const ProductDetail = () => {
                         Pilih Durasi
                       </h4>
                       <p className="text-xs text-stone-400">
-                        Minimal sewa 1 hari
+                        Minimal sewa 3 hari paket dasar. Hari berikutnya dikenakan biaya tambahan.
                       </p>
                     </div>
                     <div className="flex items-center gap-4 bg-white border border-stone-200 rounded-2xl p-2 shadow-sm">
                       <button
-                        onClick={() => setDuration(Math.max(1, duration - 1))}
+                        onClick={() => setDuration(Math.max(3, duration - 1))} // Pastikan ini sudah diganti ke 3 juga
                         className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-stone-100 transition-colors text-amber-900 font-bold text-xl"
                       >
                         −
@@ -193,8 +200,7 @@ const ProductDetail = () => {
                         +
                       </button>
                     </div>
-                  </div>
-
+                  </div>  
                   <div className="flex justify-between items-end pt-4 border-t border-stone-200">
                     <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest pb-1">
                       Estimasi Total
