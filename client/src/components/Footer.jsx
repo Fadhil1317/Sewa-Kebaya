@@ -1,3 +1,4 @@
+import { Instagram } from "lucide-react";
 const Footer = () => {
   return (
     <footer className="bg-stone-950 text-stone-400 pt-16 pb-8 border-t border-amber-900/30 w-full mt-auto">
@@ -6,7 +7,7 @@ const Footer = () => {
         {/* Kolom 1: Branding */}
         <div className="space-y-6">
           <h3 className="text-amber-500 font-serif text-2xl tracking-tighter">
-            Kebaya<span className="text-stone-100 font-light">Klasik</span>
+            Swasana<span className="text-stone-100 font-light">Kebaya</span>
           </h3>
           <p className="text-sm leading-relaxed italic font-serif text-stone-500">
             "Menghidupkan kembali tradisi melalui busana yang penuh makna dan cerita."
@@ -25,15 +26,22 @@ const Footer = () => {
           <div className="space-y-4 text-[11px] uppercase tracking-widest font-medium">
             <div className="flex items-start gap-4 text-stone-300">
               <span className="text-amber-700">📍</span>
-              <span>Jl. Batik Kumeli No. 123, Solo</span>
+              <span>Jl. Karangwangkal, Bantar, Jatilawang, Banyumas</span>
             </div>
             <div className="flex items-center gap-4 text-stone-300">
               <span className="text-amber-700">📞</span>
-              <span>+62 813 9341 3417</span>
+              <span>+62 858 7597 7960</span>
             </div>
             <div className="flex items-center gap-4 text-stone-300">
-              <span className="text-amber-700">✉️</span>
-              <span>halo@kebayaklasik.com</span>
+              <Instagram className="text-amber-700" size={16} /> 
+                <a 
+                href="https://www.instagram.com/swasanakebya_?utm_source=qr" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-amber-500 transition-colors normal-case" 
+              >
+                @swasanakebya_
+              </a>
             </div>
           </div>
         </div>
@@ -42,7 +50,7 @@ const Footer = () => {
         <div className="w-full h-44 rounded-2xl overflow-hidden grayscale contrast-125 opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-700 border border-stone-800 shadow-2xl">
           <iframe 
             title="Lokasi Toko"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3955.123456789!2d110.82!3d-7.56!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zN8KwMzMnMzYuMCJTIDExMMKwNDknMTIuMCJF!5e0!3m2!1sid!2sid!4v1234567890" 
+            src="https://maps.app.goo.gl/rpP1gZus4jyKxufv9?g_st=ac" 
             className="w-full h-full"
             style={{ border: 0 }}
             allowFullScreen="" 
