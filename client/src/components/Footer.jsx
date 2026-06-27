@@ -1,5 +1,3 @@
-import { Instagram } from "lucide-react";
-
 const Footer = () => {
   return (
     <footer className="bg-stone-950 text-stone-400 pt-16 pb-8 border-t border-amber-900/30 w-full mt-auto">
@@ -34,16 +32,16 @@ const Footer = () => {
               <span>+62 858 7597 7960</span>
             </div>
             <div className="flex items-center gap-4 text-stone-300">
-              <Instagram className="text-amber-700" size={16} /> 
-              <a 
-                href="https://www.instagram.com/swasanakebya_?utm_source=qr" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:text-amber-500 transition-colors normal-case" 
-              >
-                @swasanakebya_
-              </a>
-            </div>
+            <span className="text-amber-700 text-base">📸</span> 
+            <a 
+              href="https://www.instagram.com/swasanakebya_?utm_source=qr" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-amber-500 transition-colors normal-case" 
+            >
+              @swasanakebya_
+            </a>
+          </div>
           </div>
         </div>
 
