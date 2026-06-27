@@ -155,7 +155,7 @@ const ProductDetail = () => {
                 IDR
               </span>
               {product.price?.toLocaleString()}{" "}
-              <span className="text-sm font-sans text-stone-400">/ Hari</span>
+              <span className="text-sm font-sans text-stone-400">/ 3 Hari</span>
             </p>
 
             <div className="space-y-8 mb-10">
