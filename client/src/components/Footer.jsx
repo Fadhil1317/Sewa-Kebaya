@@ -51,7 +51,6 @@ const Footer = () => {
         <div className="w-full h-44 rounded-2xl overflow-hidden grayscale contrast-125 opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-700 border border-stone-800 shadow-2xl">
           <iframe 
             title="Lokasi Toko"
-            // DI SINI SUDAH DIPERBAIKI: Hanya mengambil isi link URL-nya saja
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3955.2166597144083!2d109.09830697400508!3d-7.551337992462313!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e65693a1b6ce331%3A0x877ad99d4d43a940!2sRias%20pengantin%20daryatmi%20Larasati!5e0!3m2!1sid!2sid!4v1782569816859!5m2!1sid!2sid" 
             className="w-full h-full"
             style={{ border: 0 }}
