@@ -1,4 +1,5 @@
-import { FaInstagram } from "react-icons/fa";
+import { Instagram, MapPin, Phone, Globe } from "lucide-react";
+
 const Footer = () => {
   return (
     <footer className="bg-stone-950 text-stone-400 pt-16 pb-8 border-t border-amber-900/30 w-full mt-auto">
@@ -13,36 +14,36 @@ const Footer = () => {
             "Menghidupkan kembali tradisi melalui busana yang penuh makna dan cerita."
           </p>
           <div className="flex gap-4 pt-2">
-            <span className="grayscale opacity-70 hover:opacity-100 cursor-pointer text-xl">📸</span>
-            <span className="grayscale opacity-70 hover:opacity-100 cursor-pointer text-xl">🌐</span>
+            <Instagram className="text-stone-500 hover:text-amber-500 cursor-pointer w-5 h-5 transition-colors" />
+            <Globe className="text-stone-500 hover:text-amber-500 cursor-pointer w-5 h-5 transition-colors" />
           </div>
         </div>
 
-        {/* Kolom 2: Kontak - Menggunakan Emoji agar tidak error */}
+        {/* Kolom 2: Kontak */}
         <div className="flex flex-col space-y-6">
           <h4 className="text-white text-[10px] font-bold uppercase tracking-[0.3em] pb-2 border-b border-amber-900/20 w-fit">
             Informasi Kontak
           </h4>
           <div className="space-y-4 text-[11px] uppercase tracking-widest font-medium">
             <div className="flex items-start gap-4 text-stone-300">
-              <span className="text-amber-700">📍</span>
+              <MapPin className="text-amber-700 w-4 h-4 shrink-0 mt-0.5" />
               <span>Jl. Karangwangkal, Bantar, Jatilawang, Banyumas</span>
             </div>
             <div className="flex items-center gap-4 text-stone-300">
-              <span className="text-amber-700">📞</span>
+              <Phone className="text-amber-700 w-4 h-4 shrink-0" />
               <span>+62 858 7597 7960</span>
             </div>
             <div className="flex items-center gap-4 text-stone-300">
-            <span className="text-amber-700 text-base">📸</span> 
-            <a 
-              href="https://www.instagram.com/swasanakebya_?utm_source=qr" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="hover:text-amber-500 transition-colors normal-case" 
-            >
-              @swasanakebya_
-            </a>
-          </div>
+              <Instagram className="text-amber-700 w-4 h-4 shrink-0" /> 
+              <a 
+                href="https://www.instagram.com/swasanakebya_?utm_source=qr" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-amber-500 transition-colors normal-case" 
+              >
+                @swasanakebya_
+              </a>
+            </div>
           </div>
         </div>
 
