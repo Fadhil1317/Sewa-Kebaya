@@ -22,7 +22,7 @@ const Navbar = ({ onSearch }) => {
       <div className="container mx-auto flex justify-between items-center">
         <Link to="/" className="group">
           <h1 className="text-2xl font-serif font-bold text-amber-500 tracking-tighter group-hover:text-amber-400 transition-colors">
-            Kebaya<span className="text-stone-100 font-light">Klasik</span>
+            Swasana<span className="text-stone-100 font-light">Kebaya</span>
           </h1>
         </Link>
         
