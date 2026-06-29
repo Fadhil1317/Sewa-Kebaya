@@ -5,28 +5,15 @@ import Hero from "./components/Hero";
 import ProductCard from "./components/ProductCard";
 import Footer from "./components/Footer";
 
-// --- FUNGSI CUSTOM UNTUK MEMBERI JEDA (DELAY) PADA LAZY LOADING ---
-const lazyWithDelay = (importFunction, delay = 1500) => {
-  return lazy(() =>
-    Promise.all([
-      importFunction(),
-      new Promise((resolve) => setTimeout(resolve, delay))
-    ]).then(([moduleExports]) => moduleExports)
-  );
-};
-
 // --- LAZY LOADING PAGES ---
-const ProductDetail = lazyWithDelay(() => import("./pages/ProductDetail"));
-const AdminDashboard = lazyWithDelay(() => import("./pages/AdminDashboard"));
-const Login = lazyWithDelay(() => import("./pages/Login"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const Login = lazy(() => import("./pages/Login"));
 
-// --- KOMPONEN LOADING DENGAN ANIMASI SPINNER ---
+// Komponen Loading Sederhana saat halaman berpindah
 const PageLoader = () => (
-  <div className="flex flex-col h-96 items-center justify-center gap-4 bg-[#FDFCF8]">
-    <div className="w-12 h-12 border-4 border-stone-200 border-t-amber-950 rounded-full animate-spin"></div>
-    <p className="text-stone-600 font-serif italic tracking-wide animate-pulse">
-      Memuat koleksi kebaya...
-    </p>
+  <div className="flex h-64 items-center justify-center text-stone-500 italic">
+    Memuat halaman kebaya...
   </div>
 );
 
@@ -34,9 +21,6 @@ function App() {
   const [dbProducts, setDbProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua");
-  
-  // State untuk mendeteksi loading data dari API
-  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // --- STATE PAGINATION ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,35 +30,23 @@ function App() {
   const isAdminPage =
     location.pathname.startsWith("/admin") || location.pathname === "/login";
 
-  // 1. Fetch Data Produk Murni MongoDB (Aman dari Crash 500)
+  // 1. Fetch Data Produk (Murni Mengikuti Acuan Awal + Catch Safety)
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL;
-    
-    setTimeout(() => {
-      fetch(`${API_URL}/api/products`)
-        .then((res) => {
-          // Jika server MongoDB/Vercel error, langsung lempar ke .catch
-          if (!res.ok) {
-            throw new Error(`Server bermasalah dengan status: ${res.status}`);
-          }
-          return res.json();
-        })
-        .then((data) => {
-          // Validasi ketat: data wajib berbentuk Array dari MongoDB
-          if (Array.isArray(data)) {
-            setDbProducts(data);
-          } else {
-            console.error("Data dari MongoDB bukan berbentuk array:", data);
-            setDbProducts([]); 
-          }
-          setIsLoadingData(false);
-        })
-        .catch((err) => {
-          console.error("Gagal load data dari MongoDB:", err);
-          setDbProducts([]); // Amankan dengan array kosong agar TIDAK .map() error / white screen
-          setIsLoadingData(false);
-        });
-    }, 1500); // Jeda animasi loading 1.5 detik
+    fetch(`${API_URL}/api/products`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Memastikan data yang masuk berbentuk array sebelum dimasukkan ke state
+        if (Array.isArray(data)) {
+          setDbProducts(data);
+        } else {
+          setDbProducts([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Gagal load data:", err);
+        setDbProducts([]); // Pengaman: paksa array kosong jika API error agar tidak crash .map
+      });
   }, []);
 
   // 2. LOGIKA SMOOTH SCROLL SAAT SEARCHING
@@ -130,6 +102,7 @@ function App() {
       {!isAdminPage && <Navbar onSearch={setSearchTerm} />}
 
       <div className="grow">
+        {/* Membungkus Routes dengan Suspense agar lazy loading bekerja */}
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route
@@ -162,10 +135,7 @@ function App() {
                       </div>
                     </div>
 
-                    {/* LOGIKA TAMPILAN KONDISIONAL */}
-                    {isLoadingData ? (
-                      <PageLoader />
-                    ) : currentProducts.length > 0 ? (
+                    {currentProducts.length > 0 ? (
                       <>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-12">
                           {currentProducts.map((product) => (
@@ -173,7 +143,7 @@ function App() {
                           ))}
                         </div>
 
-                        {/* --- KONTROL PAGINATION --- */}
+                        {/* --- KONTROL PAGINATION (Limit 5) --- */}
                         {totalPages > 1 && (
                           <div className="flex justify-center items-center mt-16 gap-1 md:gap-2">
                             <button
