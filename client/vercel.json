@@ -1,10 +1,15 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "rewrites": [
+  "framework": "vite",
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(assets|pwa-192x192.png|pwa-512x512.png|favicon.svg|sw.js|manifest.webmanifest|registerSW.js)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
