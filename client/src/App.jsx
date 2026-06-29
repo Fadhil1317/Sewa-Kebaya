@@ -35,7 +35,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   
-  // State baru untuk mendeteksi loading data dari API
+  // State untuk mendeteksi loading data dari API
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // --- STATE PAGINATION ---
@@ -46,23 +46,35 @@ function App() {
   const isAdminPage =
     location.pathname.startsWith("/admin") || location.pathname === "/login";
 
-  // 1. Fetch Data Produk dengan Animasi Loading & Delay Buatan (1.5 detik)
+  // 1. Fetch Data Produk dengan Pengaman Validasi Array & Status Response
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL;
     
-    // Kita beri jeda juga di sini agar animasi loading di awal terlihat sengaja
     setTimeout(() => {
       fetch(`${API_URL}/api/products`)
-        .then((res) => res.json())
+        .then((res) => {
+          // Jika backend mengirim error (seperti status 500), lempar ke blok .catch
+          if (!res.ok) {
+            throw new Error(`Server bermasalah dengan status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => {
-          setDbProducts(data);
-          setIsLoadingData(false); // Selesai loading
+          // Memastikan data dari backend benar-benar berwujud Array sebelum di-set
+          if (Array.isArray(data)) {
+            setDbProducts(data);
+          } else {
+            console.error("Data dari API bukan sebuah array:", data);
+            setDbProducts([]); // Amankan dengan array kosong agar tidak .map error
+          }
+          setIsLoadingData(false);
         })
         .catch((err) => {
           console.error("Gagal load data:", err);
-          setIsLoadingData(false); // Tetap matikan loading jika error
+          setDbProducts([]); // Amankan dengan array kosong jika terdeteksi crash/error 500
+          setIsLoadingData(false);
         });
-    }, 1500); // Delay 1.5 detik agar seirama dengan lazy loading halaman lain
+    }, 1500); // Delay 1.5 detik agar animasi loading terlihat manis
   }, []);
 
   // 2. LOGIKA SMOOTH SCROLL SAAT SEARCHING
@@ -150,12 +162,10 @@ function App() {
                       </div>
                     </div>
 
-                    {/* LOGIKA KONDISIONAL BARU */}
+                    {/* LOGIKA TAMPILAN KONDISIONAL */}
                     {isLoadingData ? (
-                      // Jika data sedang diambil, tampilkan Spinner Loading
                       <PageLoader />
                     ) : currentProducts.length > 0 ? (
-                      // Jika data selesai diambil dan ADA produknya
                       <>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-12">
                           {currentProducts.map((product) => (
@@ -213,7 +223,6 @@ function App() {
                         )}
                       </>
                     ) : (
-                      // Jika data selesai diambil tapi EMANG KOSONG di database
                       <div className="text-center py-20 italic text-stone-400">
                         Model belum tersedia...
                       </div>
