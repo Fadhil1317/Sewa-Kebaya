@@ -10,10 +10,13 @@ const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const Login = lazy(() => import("./pages/Login"));
 
-// Komponen Loading Sederhana saat halaman berpindah
+// Komponen Loading Spinner Cantik untuk Halaman Utama & Perpindahan Halaman
 const PageLoader = () => (
-  <div className="flex h-64 items-center justify-center text-stone-500 italic">
-    Memuat halaman kebaya...
+  <div className="flex flex-col h-64 items-center justify-center gap-3 bg-[#FDFCF8]">
+    <div className="w-10 h-10 border-4 border-stone-200 border-t-amber-950 rounded-full animate-spin"></div>
+    <p className="text-stone-500 font-serif italic text-sm tracking-wide animate-pulse">
+      Memuat koleksi kebaya...
+    </p>
   </div>
 );
 
@@ -21,6 +24,9 @@ function App() {
   const [dbProducts, setDbProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua");
+  
+  // State indikator muat data (Default TRUE agar saat pertama buka langsung loading)
+  const [isLoading, setIsLoading] = useState(true);
 
   // --- STATE PAGINATION ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,22 +36,23 @@ function App() {
   const isAdminPage =
     location.pathname.startsWith("/admin") || location.pathname === "/login";
 
-  // 1. Fetch Data Produk (Murni Mengikuti Acuan Awal + Catch Safety)
+  // 1. Fetch Data Produk Instan (Tanpa Delay Buatan)
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL;
     fetch(`${API_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => {
-        // Memastikan data yang masuk berbentuk array sebelum dimasukkan ke state
         if (Array.isArray(data)) {
           setDbProducts(data);
         } else {
           setDbProducts([]);
         }
+        setIsLoading(false); // Matikan loading secepat kilat setelah data didapat
       })
       .catch((err) => {
         console.error("Gagal load data:", err);
-        setDbProducts([]); // Pengaman: paksa array kosong jika API error agar tidak crash .map
+        setDbProducts([]);
+        setIsLoading(false); // Matikan loading jika error agar tidak menggantung
       });
   }, []);
 
@@ -102,7 +109,6 @@ function App() {
       {!isAdminPage && <Navbar onSearch={setSearchTerm} />}
 
       <div className="grow">
-        {/* Membungkus Routes dengan Suspense agar lazy loading bekerja */}
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route
@@ -135,7 +141,12 @@ function App() {
                       </div>
                     </div>
 
-                    {currentProducts.length > 0 ? (
+                    {/* LOGIKA KONDISIONAL BERDASARKAN STATUS AMBIL DATA */}
+                    {isLoading ? (
+                      // 1. Tampilkan spinner berputar saat request API sedang berjalan
+                      <PageLoader />
+                    ) : currentProducts.length > 0 ? (
+                      // 2. Jika loading beres dan ada datanya, langsung muncul semua card
                       <>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-12">
                           {currentProducts.map((product) => (
@@ -143,7 +154,7 @@ function App() {
                           ))}
                         </div>
 
-                        {/* --- KONTROL PAGINATION (Limit 5) --- */}
+                        {/* --- KONTROL PAGINATION --- */}
                         {totalPages > 1 && (
                           <div className="flex justify-center items-center mt-16 gap-1 md:gap-2">
                             <button
@@ -193,6 +204,7 @@ function App() {
                         )}
                       </>
                     ) : (
+                      // 3. Jika loading beres tapi emang datanya kosong / backend error 500
                       <div className="text-center py-20 italic text-stone-400">
                         Model belum tersedia...
                       </div>
