@@ -1,9 +1,22 @@
 {
+  "version": 2,
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(manifest.webmanifest|manifest.json|registerSW.js|sw.js)",
-      "destination": "/$1"
+      "source": "/manifest.webmanifest",
+      "destination": "/manifest.webmanifest"
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/registerSW.js",
+      "destination": "/registerSW.js"
+    },
+    {
+      "source": "/sw.js",
+      "destination": "/sw.js"
     },
     {
       "source": "/(.*)",
