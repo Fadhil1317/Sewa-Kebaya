@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifestFilename: 'manifest.json',
+      // Baris manifestFilename dihapus agar menggunakan standar bawaan
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'SwasanaKebaya',
