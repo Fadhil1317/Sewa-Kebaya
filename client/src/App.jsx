@@ -5,15 +5,30 @@ import Hero from "./components/Hero";
 import ProductCard from "./components/ProductCard";
 import Footer from "./components/Footer";
 
-// --- LAZY LOADING PAGES ---
-const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const Login = lazy(() => import("./pages/Login"));
+// --- FUNGSI CUSTOM UNTUK MEMBERI JEDA (DELAY) PADA LAZY LOADING ---
+// Fungsi ini memaksa komponen menunggu minimal 1500ms (1.5 detik) agar animasi loading terlihat
+const lazyWithDelay = (importFunction, delay = 1500) => {
+  return lazy(() =>
+    Promise.all([
+      importFunction(),
+      new Promise((resolve) => setTimeout(resolve, delay))
+    ]).then(([moduleExports]) => moduleExports)
+  );
+};
 
-// Komponen Loading Sederhana saat halaman berpindah
+// --- LAZY LOADING PAGES (DENGAN DELAY BUATAN) ---
+const ProductDetail = lazyWithDelay(() => import("./pages/ProductDetail"));
+const AdminDashboard = lazyWithDelay(() => import("./pages/AdminDashboard"));
+const Login = lazyWithDelay(() => import("./pages/Login"));
+
+// --- KOMPONEN LOADING DENGAN ANIMASI SPINNER ---
 const PageLoader = () => (
-  <div className="flex h-64 items-center justify-center text-stone-500 italic">
-    Memuat halaman kebaya...
+  <div className="flex flex-col h-96 items-center justify-center gap-4 bg-[#FDFCF8]">
+    {/* Animasi Spinner Bulat Tailwind */}
+    <div className="w-12 h-12 border-4 border-stone-200 border-t-amber-950 rounded-full animate-spin"></div>
+    <p className="text-stone-600 font-serif italic tracking-wide animate-pulse">
+      Memuat koleksi kebaya...
+    </p>
   </div>
 );
 

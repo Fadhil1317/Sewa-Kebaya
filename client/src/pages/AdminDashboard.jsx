@@ -351,7 +351,7 @@ const AdminDashboard = () => {
 
       {/* --- AREA NOTA PREMIUM (HANYA MUNCUL SAAT DI-PRINT) --- */}
       {printData && (
-        <div className="hidden print:flex flex-col fixed inset-0 bg-white p-14 z-[9999] text-left text-stone-900 font-sans tracking-wide justify-between h-screen w-screen">
+        <div className="hidden print:flex flex-col fixed inset-0 bg-white p-14 z-9999 text-left text-stone-900 font-sans tracking-wide justify-between h-screen w-screen">
           
           <div>
             {/* 1. HEADER TOKO */}
