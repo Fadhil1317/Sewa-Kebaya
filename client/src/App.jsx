@@ -46,35 +46,35 @@ function App() {
   const isAdminPage =
     location.pathname.startsWith("/admin") || location.pathname === "/login";
 
-  // 1. Fetch Data Produk dengan Pengaman Validasi Array & Status Response
+  // 1. Fetch Data Produk Murni MongoDB (Aman dari Crash 500)
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL;
     
     setTimeout(() => {
       fetch(`${API_URL}/api/products`)
         .then((res) => {
-          // Jika backend mengirim error (seperti status 500), lempar ke blok .catch
+          // Jika server MongoDB/Vercel error, langsung lempar ke .catch
           if (!res.ok) {
             throw new Error(`Server bermasalah dengan status: ${res.status}`);
           }
           return res.json();
         })
         .then((data) => {
-          // Memastikan data dari backend benar-benar berwujud Array sebelum di-set
+          // Validasi ketat: data wajib berbentuk Array dari MongoDB
           if (Array.isArray(data)) {
             setDbProducts(data);
           } else {
-            console.error("Data dari API bukan sebuah array:", data);
-            setDbProducts([]); // Amankan dengan array kosong agar tidak .map error
+            console.error("Data dari MongoDB bukan berbentuk array:", data);
+            setDbProducts([]); 
           }
           setIsLoadingData(false);
         })
         .catch((err) => {
-          console.error("Gagal load data:", err);
-          setDbProducts([]); // Amankan dengan array kosong jika terdeteksi crash/error 500
+          console.error("Gagal load data dari MongoDB:", err);
+          setDbProducts([]); // Amankan dengan array kosong agar TIDAK .map() error / white screen
           setIsLoadingData(false);
         });
-    }, 1500); // Delay 1.5 detik agar animasi loading terlihat manis
+    }, 1500); // Jeda animasi loading 1.5 detik
   }, []);
 
   // 2. LOGIKA SMOOTH SCROLL SAAT SEARCHING
