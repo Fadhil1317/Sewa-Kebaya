@@ -8,6 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
+      includeManifestInSW: true,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'] // Memaksa Workbox mencatat semua aset
       },
