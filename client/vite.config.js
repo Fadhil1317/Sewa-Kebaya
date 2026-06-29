@@ -8,9 +8,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
-      includeManifestInSW: true,
+      includeManifestInSW: false, // Set false agar tidak bertabrakan dengan precache Workbox
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'] // Memaksa Workbox mencatat semua aset
+        // Jangan masukkan manifest ke dalam sistem precache Workbox yang memicu error 404
+        navigateFallback: '/index.html',
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
