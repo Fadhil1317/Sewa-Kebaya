@@ -7,7 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'inline', // Mendaftarkan service worker secara otomatis langsung di HTML hasil build
+      injectRegister: 'inline',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'] // Memaksa Workbox mencatat semua aset
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'SwasanaKebaya',
