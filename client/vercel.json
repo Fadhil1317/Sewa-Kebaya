@@ -3,8 +3,8 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/manifest.webmanifest",
-      "destination": "/manifest.webmanifest"
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
     },
     {
       "source": "/sw.js",
