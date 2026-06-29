@@ -11,15 +11,15 @@
       "destination": "/sw.js"
     },
     {
-      "source": "/admin(.*)",
+      "source": "/admin/:path*",
       "destination": "/index.html"
     },
     {
-      "source": "/login(.*)",
+      "source": "/login/:path*",
       "destination": "/index.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/:path*",
       "destination": "/index.html"
     }
   ]
