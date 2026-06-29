@@ -20,6 +20,9 @@ const AdminDashboard = () => {
   const [isFormOpen, setIsFormOpen] = useState(true);
   const [isEditingGlow, setIsEditingGlow] = useState(false);
   
+  // State baru untuk menampung data yang akan di-print
+  const [printData, setPrintData] = useState(null);
+  
   const [form, setForm] = useState({
     name: "", price: "", category: "", description: "", image: "", isAvailable: true 
   });
@@ -150,26 +153,24 @@ const AdminDashboard = () => {
     }
   };
 
+  // --- PERBAIKAN FITUR CETAK NOTA ---
   const handlePrintNota = (t) => {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head><title>Nota - ${t.customerName}</title></head>
-        <body onload="window.print();window.close()">${t.customerName} - ${t.productName}</body>
-      </html>
-    `);
-    printWindow.document.close();
+    setPrintData(t);
+    // Memberikan jeda sedikit agar React merender komponen nota sebelum dialog print muncul
+    setTimeout(() => {
+      window.print();
+    }, 200);
   };
 
   return (
     <div className="flex min-h-screen bg-[#FDFCF8] font-sans text-stone-800 relative">
       {/* MOBILE OVERLAY */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/50 z-50 lg:hidden print:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* SIDEBAR */}
-      <aside className={`fixed lg:sticky top-0 left-0 z-50 w-64 h-screen bg-stone-950 transition-transform duration-300 border-r border-amber-900/20 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      {/* SIDEBAR - Ditambah print:hidden */}
+      <aside className={`fixed lg:sticky top-0 left-0 z-50 w-64 h-screen bg-stone-950 transition-transform duration-300 border-r border-amber-900/20 print:hidden ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-8 text-amber-500 font-serif text-2xl font-bold border-b border-stone-900 flex justify-between items-center">
           <span>Kebaya<span className="text-stone-100 font-light text-xl">Klasik</span></span>
           <button className="lg:hidden text-stone-400" onClick={() => setIsSidebarOpen(false)}><X/></button>
@@ -187,8 +188,8 @@ const AdminDashboard = () => {
         </nav>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* MAIN CONTENT - Ditambah print:hidden */}
+      <div className="flex-1 flex flex-col min-w-0 print:hidden">
         <header className="h-20 bg-white/80 backdrop-blur-md border-b flex items-center justify-between px-6 lg:px-10 sticky top-0 z-40">
           <button className="lg:hidden p-2" onClick={() => setIsSidebarOpen(true)}><Menu/></button>
           <h2 className="hidden md:block font-serif text-lg">{activeTab === 'katalog' ? 'Manajemen Koleksi' : 'Log Transaksi'}</h2>
@@ -319,9 +320,9 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* MODAL TRANSAKSI */}
+      {/* MODAL TRANSAKSI - Ditambah print:hidden */}
       {showTransModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm print:hidden">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden">
             <div className="bg-stone-950 p-6 lg:p-8 text-white flex justify-between items-center">
               <div><h3 className="text-xl font-serif">Catat Sewa</h3><p className="text-stone-400 text-[10px] uppercase mt-1">{transForm.productName}</p></div>
@@ -347,6 +348,119 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* --- AREA NOTA PREMIUM (HANYA MUNCUL SAAT DI-PRINT) --- */}
+      {printData && (
+        <div className="hidden print:flex flex-col fixed inset-0 bg-white p-14 z-[9999] text-left text-stone-900 font-sans tracking-wide justify-between h-screen w-screen">
+          
+          <div>
+            {/* 1. HEADER TOKO */}
+            <div className="flex justify-between items-start border-b-2 border-stone-800 pb-6 mb-8">
+              <div>
+                <h1 className="font-serif text-3xl font-bold tracking-wider text-amber-950 uppercase">
+                  Kebaya Klasik <span className="font-light text-stone-600">Ningrat</span>
+                </h1>
+                <p className="text-xs text-stone-500 uppercase tracking-widest mt-1">Premium Kebaya Rental & Boutique</p>
+              </div>
+              <div className="text-right text-xs text-stone-500 space-y-0.5">
+                <p>Jl. Karangwangkal, Bantar, Jatilawang, Banyumas</p>
+                <p>WhatsApp: +62 858 7597 7960</p>
+                <p>Instagram: @swasanakebya_</p>
+              </div>
+            </div>
+
+            {/* 2. METADATA / INFO INVOICE */}
+            <div className="grid grid-cols-2 gap-8 mb-10 text-xs">
+              <div>
+                <h4 className="font-bold text-stone-400 uppercase tracking-wider mb-2">Ditujukan Kepada:</h4>
+                <p className="text-base font-bold text-stone-800">{printData.customerName}</p>
+                <p className="text-stone-600 mt-1">{printData.customerWhatsapp}</p>
+              </div>
+              <div className="text-right flex flex-col items-end">
+                <h4 className="font-bold text-stone-400 uppercase tracking-wider mb-2">Detail Nota:</h4>
+                <table className="text-right text-stone-600 space-y-1">
+                  <tbody>
+                    <tr>
+                      <td className="pr-4 font-medium">No. Invoice:</td>
+                      <td className="font-mono text-stone-900 font-bold">#INV/{printData._id?.substring(printData._id.length - 6).toUpperCase()}</td>
+                    </tr>
+                    <tr>
+                      <td className="pr-4 font-medium">Tanggal Sewa:</td>
+                      <td className="text-stone-900">{printData.startDate}</td>
+                    </tr>
+                    <tr>
+                      <td className="pr-4 font-medium">Metode:</td>
+                      <td className="text-stone-900">Tunai / Transfer</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 3. TABEL RINCIAN PRODUK */}
+            <div className="mb-8">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-stone-800 text-stone-400 text-xs uppercase tracking-wider font-bold">
+                    <th className="py-3 pl-2">Deskripsi Produk</th>
+                    <th className="py-3 text-center">Durasi</th>
+                    <th className="py-3 text-right pr-2">Total Harga</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-200">
+                  <tr className="text-stone-800">
+                    <td className="py-4 pl-2 font-medium">
+                      <p className="text-base font-serif font-bold text-amber-950">{printData.productName}</p>
+                      <p className="text-xs text-stone-400 mt-0.5">Layanan cuci (dry cleaning) termasuk</p>
+                    </td>
+                    <td className="py-4 text-center font-medium">{printData.duration} Hari</td>
+                    <td className="py-4 text-right pr-2 font-mono font-bold text-base">
+                      Rp {printData.totalPrice?.toLocaleString('id-ID')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* 4. TOTAL & PEMBAYARAN */}
+            <div className="flex justify-end mt-4">
+              <div className="w-64 border-t-2 border-stone-800 pt-4 space-y-2 text-right">
+                <div className="flex justify-between text-xs text-stone-500">
+                  <span>Subtotal</span>
+                  <span>Rp {printData.totalPrice?.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-xs text-stone-500">
+                  <span>Pajak & Jaminan</span>
+                  <span>Rp 0</span>
+                </div>
+                <div className="flex justify-between text-stone-900 font-bold text-lg pt-2 border-t border-dashed border-stone-300">
+                  <span className="font-serif">Total Akhir</span>
+                  <span className="font-mono text-amber-950">Rp {printData.totalPrice?.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. FOOTER & SYARAT KETENTUAN */}
+          <div className="border-t border-stone-300 pt-6 flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
+            <div className="w-2/3">
+              <h5 className="font-bold uppercase tracking-wider text-stone-700 mb-1">Syarat & Ketentuan:</h5>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Pengembalian wajib sesuai dengan batas durasi hari sewa yang tertera.</li>
+                <li>Keterlambatan pengembalian dikenakan denda sesuai tarif harian resmi.</li>
+                <li>Mohon menjaga keutuhan kain. Segala bentuk kerusakan/noda permanen menjadi tanggung jawab penyewa.</li>
+              </ul>
+            </div>
+            <div className="text-right space-y-1">
+              <p className="italic font-serif text-stone-600 text-xs mb-8">Terima kasih atas kepercayaan Anda.</p>
+              <div className="w-32 border-b border-stone-400 mx-auto"></div>
+              <p className="uppercase font-bold tracking-widest text-stone-400 text-center">Hormat Kami</p>
+            </div>
+          </div>
+
+        </div>
+      )}
+
     </div>
   );
 };
