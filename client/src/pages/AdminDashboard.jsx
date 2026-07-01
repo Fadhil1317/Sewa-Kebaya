@@ -20,7 +20,7 @@ const AdminDashboard = () => {
   const [isFormOpen, setIsFormOpen] = useState(true);
   const [isEditingGlow, setIsEditingGlow] = useState(false);
   
-  // State untuk cetak nota
+  // State cetak nota
   const [printData, setPrintData] = useState(null);
 
   // State internal untuk Lazy Loading List Produk
@@ -32,7 +32,7 @@ const AdminDashboard = () => {
 
   const [showTransModal, setShowTransModal] = useState(false);
   
-  // State form sewa (Menggunakan default bawaan industri: paket sewa 3 hari)
+  // Form input terkunci otomatis ke minimal paket sewa awal (3 hari)
   const [transForm, setTransForm] = useState({
     customerName: "", customerWhatsapp: "", productName: "",
     productId: "", startDate: "", duration: 3, totalPrice: 0
@@ -53,28 +53,38 @@ const AdminDashboard = () => {
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+      if (!res.ok) {
+        setProducts([]); // Jika backend bermasalah (cth: status 500), isi dengan array kosong agar tidak crash
+        return;
+      }
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) { 
       console.error(err); 
-      setProducts([]); // Fallback aman jika backend eror
+      setProducts([]); 
     }
   };
 
   const fetchTransactions = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`);
+      if (!res.ok) {
+        setTransactions([]); // Jika backend bermasalah, isi dengan array kosong agar tidak crash
+        return;
+      }
       const data = await res.json();
       setTransactions(Array.isArray(data) ? data : []);
     } catch (err) { 
       console.error(err); 
-      setTransactions([]); // Fallback aman jika backend eror
+      setTransactions([]); 
     }
   };
 
-  // --- PROTEKSI FILTER KEBUTALAN (Mencegah Layar Putih Akibat Eror 500) ---
+  // --- PROTEKSI TOTAL ANTI-CRASH (Biar Tidak Memutih Meski Backend 500) ---
   const filteredAdminProducts = useMemo(() => {
+    // Dipastikan variabel harus berupa array utuh sebelum melakukan operasi .filter()
     if (!products || !Array.isArray(products)) return [];
+    
     return products.filter(p => {
       if (!p) return false;
       const name = p.name ? String(p.name).toLowerCase() : "";
@@ -123,7 +133,7 @@ const AdminDashboard = () => {
         alert("Data produk berhasil disimpan! ✨");
       } else {
         if (editId) setProducts(previousProducts);
-        alert("Gagal menyimpan data produk");
+        alert("Gagal menyimpan data produk, respon server bermasalah.");
       }
     } catch (err) { 
       if (editId) setProducts(previousProducts);
@@ -150,16 +160,17 @@ const AdminDashboard = () => {
     }
   };
 
-  // --- HANDLERS TRANSAKSI DAN MODAL KELIPATAN ---
+  // --- HANDLERS TRANSAKSI MODAL KELIPATAN ---
   const handleOpenTransModal = (product) => {
+    const basePrice = Number(product.price) || 370000;
     setTransForm({
       customerName: "", 
       customerWhatsapp: "", 
       productName: product.name,
       productId: product._id, 
       startDate: new Date().toISOString().split('T')[0],
-      duration: 3,               // Set default awal pemicu komponen ke 3 hari
-      totalPrice: Number(product.price) || 0 // Total awal setara dengan 1x harga dasar paket
+      duration: 3,               // Otomatis diset awal ke paket minimal 3 hari
+      totalPrice: basePrice      // Harga otomatis diset sesuai dengan tarif dasar item
     });
     setShowTransModal(true);
   };
@@ -183,10 +194,10 @@ const AdminDashboard = () => {
         refreshAllData();
         alert("Sewa tercatat ✅");
       } else {
-        alert("Gagal memproses transaksi. Cek kesesuaian data schema backend.");
+        alert("Server backend menolak request (Gagal simpan).");
       }
     } catch (err) { 
-      alert("Gagal proses sewa karena masalah jaringan."); 
+      alert("Gagal memproses transaksi karena gangguan koneksi."); 
     }
   };
 
@@ -286,7 +297,7 @@ const AdminDashboard = () => {
                 </div>
               </section>
 
-              {/* TABLE SECTION DENGAN INTEGRASI LAZY LOADING */}
+              {/* TABLE SECTION DENGAN LAZY LOADING */}
               <section className="xl:col-span-8 order-2 xl:order-1 space-y-6">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
@@ -337,7 +348,7 @@ const AdminDashboard = () => {
                         ))}
                         {displayedProducts.length === 0 && (
                           <tr>
-                            <td colSpan="4" className="px-8 py-10 text-center text-stone-400 text-sm">Tidak ada data produk ditemukan.</td>
+                            <td colSpan="4" className="px-8 py-10 text-center text-stone-400 text-sm">Tidak ada data produk ditemukan atau server database mati.</td>
                           </tr>
                         )}
                       </tbody>
@@ -379,7 +390,7 @@ const AdminDashboard = () => {
                     ))}
                     {transactions.length === 0 && (
                       <tr>
-                        <td colSpan="4" className="px-8 py-10 text-center text-stone-400 text-sm">Tidak ada log transaksi.</td>
+                        <td colSpan="4" className="px-8 py-10 text-center text-stone-400 text-sm">Tidak ada log transaksi terekam.</td>
                       </tr>
                     )}
                   </tbody>
@@ -390,7 +401,7 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* --- MODAL TRANSAKSI (SISTEM KELIPATAN PAKET MINIMAL 3 HARI) --- */}
+      {/* --- MODAL TRANSAKSI KELIPATAN 3 HARI --- */}
       {showTransModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm print:hidden">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden">
@@ -404,7 +415,7 @@ const AdminDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <input type="date" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" value={transForm.startDate} onChange={(e)=>setTransForm({...transForm, startDate:e.target.value})} required />
                 
-                {/* VALIDASI KELIPATAN 3 HARI SECARA LIVE MANDIRI */}
+                {/* VALIDASI AMAN PROPORSIONAL KELIPATAN 3 HARI */}
                 <input 
                   type="number" 
                   min="3" 
@@ -421,7 +432,7 @@ const AdminDashboard = () => {
                     }
                     
                     const p = products.find(prod => prod._id === transForm.productId);
-                    const basePrice = p ? Number(p.price) : 370000; // Menggunakan harga terdeteksi atau fallback default
+                    const basePrice = p ? Number(p.price) : 370000; 
                     const calculatedPrice = (d / 3) * basePrice;
 
                     setTransForm({
@@ -443,11 +454,10 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* --- AREA NOTA PREMIUM (HANYA MUNCUL SAAT DI-PRINT) --- */}
+      {/* --- AREA NOTA PREMIUM --- */}
       {printData && (
         <div className="hidden print:flex flex-col fixed inset-0 bg-white p-14 z-9999 text-left text-stone-900 font-sans tracking-wide justify-between h-screen w-screen">
           <div>
-            {/* Header Toko */}
             <div className="flex justify-between items-start border-b-2 border-stone-800 pb-6 mb-8">
               <div>
                 <h1 className="font-serif text-3xl font-bold tracking-wider text-amber-950 uppercase">
@@ -462,7 +472,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Info Invoice */}
             <div className="grid grid-cols-2 gap-8 mb-10 text-xs">
               <div>
                 <h4 className="font-bold text-stone-400 uppercase tracking-wider mb-2">Ditujukan Kepada:</h4>
@@ -490,7 +499,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Tabel Rincian */}
             <div className="mb-8">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
@@ -515,7 +523,6 @@ const AdminDashboard = () => {
               </table>
             </div>
 
-            {/* Total Pembayaran */}
             <div className="flex justify-end mt-4">
               <div className="w-64 border-t-2 border-stone-800 pt-4 space-y-2 text-right">
                 <div className="flex justify-between text-xs text-stone-500">
@@ -534,7 +541,6 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* S&K */}
           <div className="border-t border-stone-300 pt-6 flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
             <div className="w-2/3">
               <h5 className="font-bold uppercase tracking-wider text-stone-700 mb-1">Syarat & Ketentuan:</h5>
