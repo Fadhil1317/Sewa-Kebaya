@@ -6,17 +6,26 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   
   // --- STATE DATA ---
-  const [products, setProducts] = useState([]); // Inisialisasi awal mutlak array kosong
+  const [products, setProducts] = useState([]); 
   const [transactions, setTransactions] = useState([]);
   const [adminSearchTerm, setAdminSearchTerm] = useState("");
   
   // --- STATE LAZY LOADING INTERNAL LIST ---
-  const [visibleProductsCount, setVisibleProductsCount] = useState(5); // Batasi 5 item pertama
+  const [visibleProductsCount, setVisibleProductsCount] = useState(5); 
 
+  // --- STATE FORM PRODUK ---
   const [form, setForm] = useState({
     name: "", price: "", category: "", description: "", image: "", isAvailable: true
   });
   const [editId, setEditId] = useState(null);
+
+  // --- STATE FORM SEWA BARU ---
+  const [rentForm, setRentForm] = useState({
+    productId: "",
+    durationDays: 3, // Minimal & default awal 3 hari
+    totalPrice: 0,
+    status: "disewa" // Status otomatis berubah menjadi disewa
+  });
 
   useEffect(() => {
     const isAdmin = localStorage.getItem("isAdmin");
@@ -33,7 +42,6 @@ const AdminDashboard = () => {
     fetch(`${API_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => {
-        // PROTEKSI UTAMA: Validasi apakah response dari backend berbentuk Array asli
         if (Array.isArray(data)) {
           setProducts(data);
         } else {
@@ -43,7 +51,7 @@ const AdminDashboard = () => {
       })
       .catch((err) => {
         console.error("Gagal mengambil data produk:", err);
-        setProducts([]); // Fallback otomatis ke array kosong jika API 500
+        setProducts([]); 
       });
   };
 
@@ -66,7 +74,7 @@ const AdminDashboard = () => {
 
   // --- LOGIKA FILTER AMAN ---
   const filteredAdminProducts = useMemo(() => {
-    if (!Array.isArray(products)) return []; // Mengunci agar fungsi filter tidak memicu crash jika server bermasalah
+    if (!Array.isArray(products)) return []; 
     return products.filter((p) => {
       const productName = p?.name ? p.name.toLowerCase() : "";
       const productCategory = p?.category ? p.category.toLowerCase() : "";
@@ -87,27 +95,43 @@ const AdminDashboard = () => {
     setForm(product);
   };
 
+  // --- OPTIMASI CRUD: Delete Cepat (Optimistic Update) ---
   const handleDelete = (id) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus produk ini?")) {
+      // Hapus dari state lokal dulu agar UI langsung update tanpa jeda network
+      const previousProducts = [...products];
+      setProducts(products.filter(p => p._id !== id));
+
       const API_URL = import.meta.env.VITE_API_URL;
       fetch(`${API_URL}/api/products/${id}`, { method: "DELETE" })
         .then((res) => {
           if (res.ok) {
             toast.success("Produk berhasil dihapus");
-            fetchProducts();
+            fetchProducts(); // Sinkronisasi ulang background data
           } else {
+            setProducts(previousProducts); // Rollback jika gagal
             toast.error("Gagal menghapus produk");
           }
         })
-        .catch(() => toast.error("Terjadi kesalahan jaringan"));
+        .catch(() => {
+          setProducts(previousProducts); // Rollback jika error jaringan
+          toast.error("Terjadi kesalahan jaringan");
+        });
     }
   };
 
+  // --- OPTIMASI CRUD: Submit Cepat (Add/Edit) ---
   const handleSubmit = (e) => {
     e.preventDefault();
     const API_URL = import.meta.env.VITE_API_URL;
     const url = editId ? `${API_URL}/api/products/${editId}` : `${API_URL}/api/products`;
     const method = editId ? "PUT" : "POST";
+
+    // Optimistic state update untuk Edit
+    let previousProducts = [...products];
+    if (editId) {
+      setProducts(products.map(p => p._id === editId ? { ...p, ...form } : p));
+    }
 
     fetch(url, {
       method: method,
@@ -121,10 +145,73 @@ const AdminDashboard = () => {
           setEditId(null);
           fetchProducts();
         } else {
+          if (editId) setProducts(previousProducts); // Rollback jika edit gagal
           toast.error("Gagal menyimpan data produk");
         }
       })
-      .catch(() => toast.error("Terjadi kegagalan jaringan"));
+      .catch(() => {
+        if (editId) setProducts(previousProducts); // Rollback jika network error
+        toast.error("Terjadi kegagalan jaringan");
+      });
+  };
+
+  // --- LOGIKA HITUNG HARGA SEWA KELIPATAN 3 HARI ---
+  const handleProductSelectChange = (productId) => {
+    const selectedProduct = products.find(p => p._id === productId);
+    if (selectedProduct) {
+      const basePrice = Number(selectedProduct.price); // Ini harga default untuk 3 hari
+      const currentDuration = rentForm.durationDays;
+      
+      // Rumus kalkulasi: (Durasi / 3) * harga default 3 hari
+      const calculatedPrice = (currentDuration / 3) * basePrice;
+
+      setRentForm({
+        ...rentForm,
+        productId,
+        totalPrice: calculatedPrice
+      });
+    } else {
+      setRentForm({ ...rentForm, productId: "", totalPrice: 0 });
+    }
+  };
+
+  const handleDurationChange = (days) => {
+    const targetDays = Number(days);
+    if (targetDays < 3 || targetDays % 3 !== 0) return; // Validasi kelipatan 3 hari
+
+    const selectedProduct = products.find(p => p._id === rentForm.productId);
+    const basePrice = selectedProduct ? Number(selectedProduct.price) : 0;
+    const calculatedPrice = (targetDays / 3) * basePrice;
+
+    setRentForm({
+      ...rentForm,
+      durationDays: targetDays,
+      totalPrice: calculatedPrice
+    });
+  };
+
+  // --- SUBMIT TRANSAKSI SEWA BARU ---
+  const handleRentSubmit = (e) => {
+    e.preventDefault();
+    if (!rentForm.productId) return toast.error("Pilih produk terlebih dahulu");
+
+    const API_URL = import.meta.env.VITE_API_URL;
+    fetch(`${API_URL}/api/transactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(rentForm)
+    })
+      .then((res) => {
+        if (res.ok) {
+          toast.success("Transaksi sewa berhasil dibuat, status menjadi DISEWA!");
+          setRentForm({ productId: "", durationDays: 3, totalPrice: 0, status: "disewa" });
+          fetchTransactions();
+          fetchProducts(); // Refresh untuk melihat perubahan availability jika ada relasi
+        } else {
+          toast.error("Gagal memproses sewa");
+        }
+      })
+      .catch(() => toast.error("Gangguan jaringan pada sistem sewa"));
   };
 
   return (
@@ -143,7 +230,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* PANEL FORM */}
+        {/* PANEL FORM PRODUK */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm h-fit">
           <h2 className="text-xl font-serif mb-4 text-stone-800">
             {editId ? "Edit Detail Busana" : "Tambah Koleksi Baru"}
@@ -154,7 +241,7 @@ const AdminDashboard = () => {
               <input type="text" className="w-full border border-stone-200 p-2.5 rounded-lg text-sm outline-none focus:border-amber-800" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-1">Harga Sewa</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-1">Harga Sewa (Default 3 Hari)</label>
               <input type="number" className="w-full border border-stone-200 p-2.5 rounded-lg text-sm outline-none focus:border-amber-800" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
             </div>
             <div>
@@ -226,7 +313,7 @@ const AdminDashboard = () => {
               </table>
             </div>
 
-            {/* INTEGRASI LAZY LOADING LIST: Tombol tampil jika item terfilter masih tersisa */}
+            {/* INTEGRASI LAZY LOADING LIST */}
             {filteredAdminProducts.length > visibleProductsCount && (
               <div className="p-3 bg-stone-50 text-center border-t border-stone-100">
                 <button
@@ -239,6 +326,57 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* --- PANEL BARU: FORM TRANSAKSI SEWA (MEMENUHI SYARAT 3 & 4) --- */}
+      <div className="mt-12 bg-white p-6 rounded-2xl border border-stone-200 shadow-sm max-w-xl">
+        <h2 className="text-xl font-serif mb-2 text-stone-800">Form Transaksi Sewa Busana</h2>
+        <p className="text-xs text-stone-500 mb-4">Penyewaan diatur wajib per kelipatan 3 Hari dengan akumulasi harga proporsional.</p>
+        
+        <form onSubmit={handleRentSubmit} className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-1">Pilih Produk Kebaya</label>
+            <select 
+              className="w-full border border-stone-200 p-2.5 rounded-lg text-sm bg-white outline-none focus:border-amber-800"
+              value={rentForm.productId}
+              onChange={(e) => handleProductSelectChange(e.target.value)}
+              required
+            >
+              <option value="">-- Pilih Koleksi --</option>
+              {products.map(p => (
+                <option key={p._id} value={p._id}>{p.name} (Rp {Number(p.price).toLocaleString("id-ID")}/3 hari)</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-1">Jumlah Hari Sewa</label>
+              <input 
+                type="number" 
+                min="3" 
+                step="3" 
+                className="w-full border border-stone-200 p-2.5 rounded-lg text-sm outline-none focus:border-amber-800" 
+                value={rentForm.durationDays} 
+                onChange={(e) => handleDurationChange(e.target.value)}
+                required 
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-1">Status Sewa</label>
+              <input type="text" className="w-full border border-stone-200 p-2.5 rounded-lg text-sm bg-stone-100 font-semibold text-amber-900 outline-none" value={rentForm.status.toUpperCase()} readOnly />
+            </div>
+          </div>
+
+          <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100">
+            <span className="text-xs text-stone-500 block">Total Biaya Sewa:</span>
+            <span className="text-xl font-bold text-amber-950">Rp {rentForm.totalPrice.toLocaleString("id-ID")}</span>
+          </div>
+
+          <button type="submit" className="w-full py-3 bg-stone-800 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-stone-900 transition-colors">
+            Konfirmasi Penyewaan (Status: Disewa)
+          </button>
+        </form>
       </div>
     </div>
   );
