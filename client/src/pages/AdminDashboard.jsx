@@ -32,13 +32,15 @@ const AdminDashboard = () => {
 
   const [showTransModal, setShowTransModal] = useState(false);
   
-  // Simpan harga dasar produk yang sedang aktif disewa di state terpisah agar aman
-  const [selectedProductPrice, setSelectedProductPrice] = useState(0);
-
   // State form sewa terikat ketat paket awal minimal 3 hari
   const [transForm, setTransForm] = useState({
-    customerName: "", customerWhatsapp: "", productName: "",
-    productId: "", startDate: "", duration: 3, totalPrice: 0
+    customerName: "",
+    customerWhatsapp: "",
+    productName: "",
+    productId: "",
+    startDate: "",
+    duration: 3,
+    totalPrice: 0
   });
 
   // --- LOAD DATA ---
@@ -111,7 +113,7 @@ const AdminDashboard = () => {
 
   const handleSubmitProduct = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    loading(true);
     const url = editId
       ? `${import.meta.env.VITE_API_URL}/api/products/${editId}`
       : `${import.meta.env.VITE_API_URL}/api/products`;
@@ -161,27 +163,29 @@ const AdminDashboard = () => {
     }
   };
 
-  // --- MODIFIKASI UTAMA: AMANKAN HARGA LANGSUNG DARI OBJECT PRODUK YANG DI-KLIK ---
+  // --- OPEN MODAL TRANSAKSI ---
   const handleOpenTransModal = (product) => {
-    const basePrice = Number(product.price) || 370000;
-    
-    // Simpan harga asli produk ini ke state pembantu agar tidak hilang atau salah cari ID
-    setSelectedProductPrice(basePrice);
-
     setTransForm({
-      customerName: "", 
-      customerWhatsapp: "", 
+      customerName: "",
+      customerWhatsapp: "",
       productName: product.name,
-      productId: product._id, 
+      productId: product._id,
       startDate: new Date().toISOString().split('T')[0],
-      duration: 3,               // WAJIB TERKUNCI AWAL DI 3 HARI
-      totalPrice: basePrice      // 3 Hari pertama = 1x Harga Dasar
+      duration: 3,
+      totalPrice: product.price * 3
     });
     setShowTransModal(true);
   };
 
   const handleSubmitTransaction = async (e) => {
     e.preventDefault();
+    
+    // Validasi minimal durasi sewa
+    if (transForm.duration < 3) {
+      alert("Minimal durasi sewa adalah 3 hari.");
+      return;
+    }
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`, {
         method: "POST",
@@ -406,7 +410,7 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* --- MODAL TRANSAKSI KELIPATAN 3 HARI --- */}
+      {/* --- MODAL TRANSAKSI --- */}
       {showTransModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm print:hidden">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden">
@@ -420,36 +424,28 @@ const AdminDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <input type="date" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" value={transForm.startDate} onChange={(e)=>setTransForm({...transForm, startDate:e.target.value})} required />
                 
-                {/* AMAN 100%: Menghitung murni berdasarkan state selectedProductPrice tanpa mencari ulang ID */}
-                <input 
-                  type="number" 
-                  min="3" 
-                  step="3" 
-                  placeholder="Hari" 
-                  className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" 
-                  value={transForm.duration} 
+                <input
+                  type="number"
+                  min="3"
+                  placeholder="Hari"
+                  className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500"
+                  value={transForm.duration}
                   onChange={(e)=>{
-                    const d = parseInt(e.target.value) || 0;
-                    
-                    if (d < 3 || d % 3 !== 0) {
-                      setTransForm({ ...transForm, duration: d });
-                      return;
-                    }
-                    
-                    const calculatedPrice = (d / 3) * selectedProductPrice;
+                    const d = Math.max(3, parseInt(e.target.value) || 3);
+                    const p = products.find(prod => prod._id === transForm.productId);
 
                     setTransForm({
-                      ...transForm, 
-                      duration: d, 
-                      totalPrice: calculatedPrice
+                      ...transForm,
+                      duration: d,
+                      totalPrice: d * (p?.price || 0)
                     });
-                  }} 
-                  required 
+                  }}
+                  required
                 />
               </div>
               <div className="p-5 bg-amber-50 rounded-2xl flex justify-between items-center font-bold">
                 <span className="text-xs uppercase text-amber-900">Total</span>
-                <span className="font-serif text-amber-900 text-xl">Rp {Number(transForm.totalPrice).toLocaleString('id-ID')}</span>
+                <span className="font-serif text-amber-900 text-xl">Rp {Platform == 'web' ? Number(transForm.totalPrice).toLocaleString('id-ID') : transForm.totalPrice}</span>
               </div>
               <button type="submit" className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-amber-700 transition-colors">Simpan Sewa</button>
             </form>
