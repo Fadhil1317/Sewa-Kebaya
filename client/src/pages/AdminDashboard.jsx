@@ -20,7 +20,7 @@ const AdminDashboard = () => {
   const [isFormOpen, setIsFormOpen] = useState(true);
   const [isEditingGlow, setIsEditingGlow] = useState(false);
   
-  // State untuk menampung data yang akan di-print
+  // State untuk data print nota
   const [printData, setPrintData] = useState(null);
 
   // State internal untuk Lazy Loading List Produk
@@ -31,6 +31,8 @@ const AdminDashboard = () => {
   });
 
   const [showTransModal, setShowTransModal] = useState(false);
+  
+  // 1. DIKUNCI DI SINI: State awal durasi sewa langsung di-set ke 3 hari
   const [transForm, setTransForm] = useState({
     customerName: "", customerWhatsapp: "", productName: "",
     productId: "", startDate: "", duration: 3, totalPrice: 0
@@ -95,7 +97,7 @@ const AdminDashboard = () => {
     setTimeout(() => setIsEditingGlow(false), 3000);
   };
 
-  // OPTIMASI CRUD: Simpan & Update Cepat (Optimistic Update)
+  // Optimistic Update untuk Simpan/Edit Produk
   const handleSubmitProduct = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -130,7 +132,7 @@ const AdminDashboard = () => {
     setLoading(false);
   };
 
-  // OPTIMASI CRUD: Delete Cepat (Optimistic Update)
+  // Optimistic Update untuk Hapus Produk
   const handleDeleteProduct = async (id) => {
     if (window.confirm("Hapus produk ini secara permanen?")) {
       const previousProducts = [...products];
@@ -149,7 +151,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // FIX UTAMA: Pembukaan Modal Sewa Default 3 Hari (Produk Baru maupun Lama)
+  // 2. DIKUNCI DI SINI: Saat modal dibuka, isi duration dipaksa bernilai 3 hari
   const handleOpenTransModal = (product) => {
     setTransForm({
       customerName: "", 
@@ -157,8 +159,8 @@ const AdminDashboard = () => {
       productName: product.name,
       productId: product._id, 
       startDate: new Date().toISOString().split('T')[0],
-      duration: 3,              // Default dipaksa langsung ke 3 hari
-      totalPrice: product.price // Total awal 100% harga dasar (karena harga dasar = paket 3 hari)
+      duration: 3,               // Dikunci ke paket minimal 3 hari
+      totalPrice: product.price  // Total awal adalah harga dasar karena harga dasar = tarif paket 3 hari
     });
     setShowTransModal(true);
   };
@@ -281,7 +283,7 @@ const AdminDashboard = () => {
                 </div>
               </section>
 
-              {/* TABLE SECTION DENGAN LAZY LOADING LIST */}
+              {/* TABLE SECTION DENGAN LAZY LOADING */}
               <section className="xl:col-span-8 order-2 xl:order-1 space-y-6">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
@@ -307,7 +309,7 @@ const AdminDashboard = () => {
                                 <img src={p.image || "https://placeholder.com/50"} className="w-12 h-12 rounded-lg object-cover bg-stone-100" alt={p.name} />
                                 <div>
                                   <p className="font-bold text-sm">{p.name}</p>
-                                  <p className="text-amber-700 text-xs">Rp {p.price?.toLocaleString()}</p>
+                                  <p className="text-amber-700 text-xs">Rp {p.price?.toLocaleString('id-ID')}</p>
                                 </div>
                               </div>
                             </td>
@@ -334,7 +336,7 @@ const AdminDashboard = () => {
                     </table>
                   </div>
 
-                  {/* BOTTOM INTEGRASI LAZY LOADING */}
+                  {/* Tombol Lazy Loading */}
                   {filteredAdminProducts.length > visibleProductsCount && (
                     <div className="p-4 bg-stone-50/50 text-center border-t border-stone-100">
                       <button
@@ -361,7 +363,7 @@ const AdminDashboard = () => {
                       <tr key={t._id}>
                         <td className="px-8 py-5"><p className="font-bold text-sm">{t.customerName}</p><p className="text-xs text-stone-400">{t.customerWhatsapp}</p></td>
                         <td className="px-8 py-5"><p className="text-sm">{t.productName}</p><p className="text-[10px] text-amber-600 font-bold uppercase">{t.duration} Hari</p></td>
-                        <td className="px-8 py-5 font-bold text-sm">Rp {t.totalPrice?.toLocaleString()}</td>
+                        <td className="px-8 py-5 font-bold text-sm">Rp {t.totalPrice?.toLocaleString('id-ID')}</td>
                         <td className="px-8 py-5 text-right flex justify-end gap-2">
                           <button onClick={()=>handlePrintNota(t)} className="p-2.5 bg-stone-100 text-stone-600 rounded-lg"><Printer size={16}/></button>
                           <button onClick={()=>handleCancelTransaction(t)} className="p-2.5 bg-red-50 text-red-400 rounded-lg"><Trash2 size={16}/></button>
@@ -376,7 +378,7 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* FIX UTAMA: MODAL TRANSAKSI DENGAN LOGIKA KELIPATAN 3 HARI */}
+      {/* --- MODAL TRANSAKSI (SISTEM KELIPATAN PAKET 3 HARI) --- */}
       {showTransModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm print:hidden">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden">
@@ -390,7 +392,7 @@ const AdminDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <input type="date" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.startDate} onChange={(e)=>setTransForm({...transForm, startDate:e.target.value})} required />
                 
-                {/* Input Angka Dikunci Kelipatan & Min 3 Hari */}
+                {/* 3. DIKUNCI DI SINI: Atribut min, step, serta validasi on-the-fly kelipatan 3 hari */}
                 <input 
                   type="number" 
                   min="3" 
@@ -401,14 +403,14 @@ const AdminDashboard = () => {
                   onChange={(e)=>{
                     const d = parseInt(e.target.value) || 0;
                     
-                    // Validasi penggetat ketik manual agar tidak kurang dari 3 atau bukan kelipatan 3
+                    // Filter ekstra: jika user mengetik angka manual < 3 atau bukan kelipatan 3, jangan kalkulasi dulu harganya
                     if (d < 3 || d % 3 !== 0) {
                       setTransForm({ ...transForm, duration: d });
                       return;
                     }
                     
                     const p = products.find(prod => prod._id === transForm.productId);
-                    // Rumus kelipatan proporsional: (Durasi / 3) * Harga Paket Dasar
+                    // Rumus proporsional kelipatan: (Durasi yang dipilih / paket 3 hari) * Harga Dasar
                     const calculatedPrice = (d / 3) * (p?.price || 0);
 
                     setTransForm({
@@ -434,7 +436,7 @@ const AdminDashboard = () => {
       {printData && (
         <div className="hidden print:flex flex-col fixed inset-0 bg-white p-14 z-9999 text-left text-stone-900 font-sans tracking-wide justify-between h-screen w-screen">
           <div>
-            {/* 1. HEADER TOKO */}
+            {/* Header Nota */}
             <div className="flex justify-between items-start border-b-2 border-stone-800 pb-6 mb-8">
               <div>
                 <h1 className="font-serif text-3xl font-bold tracking-wider text-amber-950 uppercase">
@@ -449,7 +451,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* 2. METADATA / INFO INVOICE */}
+            {/* Info Invoice */}
             <div className="grid grid-cols-2 gap-8 mb-10 text-xs">
               <div>
                 <h4 className="font-bold text-stone-400 uppercase tracking-wider mb-2">Ditujukan Kepada:</h4>
@@ -477,7 +479,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* 3. TABEL RINCIAN PRODUK */}
+            {/* Rincian Sewa */}
             <div className="mb-8">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
@@ -502,7 +504,7 @@ const AdminDashboard = () => {
               </table>
             </div>
 
-            {/* 4. TOTAL & PEMBAYARAN */}
+            {/* Total Pembayaran */}
             <div className="flex justify-end mt-4">
               <div className="w-64 border-t-2 border-stone-800 pt-4 space-y-2 text-right">
                 <div className="flex justify-between text-xs text-stone-500">
@@ -521,7 +523,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* 5. FOOTER & SYARAT KETENTUAN */}
+          {/* S&K Footer */}
           <div className="border-t border-stone-300 pt-6 flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
             <div className="w-2/3">
               <h5 className="font-bold uppercase tracking-wider text-stone-700 mb-1">Syarat & Ketentuan:</h5>
