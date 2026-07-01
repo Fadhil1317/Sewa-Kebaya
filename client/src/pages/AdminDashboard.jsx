@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Package, LogOut, PlusCircle, Edit3, Trash2, 
-  CreditCard, Search, Users, Printer, X, Menu, ChevronDown, ChevronUp, Sparkles
+  CreditCard, Search, Users, Printer, X, Menu, ChevronDown, ChevronUp
 } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -11,8 +11,8 @@ const AdminDashboard = () => {
 
   // --- STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState('katalog'); 
-  const [products, setProducts] = useState([]);
-  const [transactions, setTransactions] = useState([]);
+  const [products, setProducts] = useState([]); // Default dipastikan array []
+  const [transactions, setTransactions] = useState([]); // Default dipastikan array []
   const [loading, setLoading] = useState(false);
   const [editId, setEditId] = useState(null);
   const [adminSearchTerm, setAdminSearchTerm] = useState("");
@@ -47,23 +47,47 @@ const AdminDashboard = () => {
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
+      if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+      
       const data = await res.json();
-      setProducts(data);
-    } catch (err) { console.error(err); }
+      // VALIDASI: Pastikan data yang masuk adalah Array agar tidak memicu b.filter error
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else {
+        console.error("Format data produk dari API bukan array:", data);
+        setProducts([]); 
+      }
+    } catch (err) { 
+      console.error("Gagal memuat produk:", err); 
+      setProducts([]); // Fallback ke array kosong jika API 500
+    }
   };
 
   const fetchTransactions = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`);
+      if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+
       const data = await res.json();
-      setTransactions(data);
-    } catch (err) { console.error(err); }
+      // VALIDASI: Pastikan data transaksi adalah Array
+      if (Array.isArray(data)) {
+        setTransactions(data);
+      } else {
+        console.error("Format data transaksi dari API bukan array:", data);
+        setTransactions([]);
+      }
+    } catch (err) { 
+      console.error("Gagal memuat transaksi:", err); 
+      setTransactions([]); // Fallback ke array kosong jika API 500
+    }
   };
 
+  // AMAN: filteredAdminProducts tidak akan crash karena products dijamin selalu ber-type Array
   const filteredAdminProducts = useMemo(() => {
+    if (!Array.isArray(products)) return [];
     return products.filter(p => 
-      p.name.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
-      (p.category && p.category.toLowerCase().includes(adminSearchTerm.toLowerCase()))
+      p?.name?.toLowerCase().includes(adminSearchTerm.toLowerCase()) ||
+      (p?.category && p.category.toLowerCase().includes(adminSearchTerm.toLowerCase()))
     );
   }, [products, adminSearchTerm]);
 
@@ -95,6 +119,8 @@ const AdminDashboard = () => {
         setEditId(null);
         fetchProducts();
         alert("Koleksi mahakarya berhasil diperbarui! ✨");
+      } else {
+        alert("Gagal menyimpan produk ke server.");
       }
     } catch (err) { alert("Error simpan produk"); }
     setLoading(false);
@@ -102,8 +128,10 @@ const AdminDashboard = () => {
 
   const handleDeleteProduct = async (id) => {
     if (window.confirm("Hapus produk ini secara permanen dari galeri?")) {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`, { method: "DELETE" });
-      fetchProducts();
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`, { method: "DELETE" });
+        if (res.ok) fetchProducts();
+      } catch (err) { console.error(err); }
     }
   };
 
@@ -286,44 +314,50 @@ const AdminDashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-100 text-stone-700">
-                        {filteredAdminProducts.map(p => (
-                          <tr key={p._id} className="hover:bg-amber-50/20 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3.5">
-                                <img src={p.image || "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=120"} className="w-11 h-14 rounded-md object-cover bg-stone-100 shadow-xs" alt={p.name} />
-                                <div>
-                                  <p className="font-medium text-stone-900 text-sm">{p.name}</p>
-                                  <p className="text-amber-800 text-xs mt-0.5 font-mono">Rp {p.price?.toLocaleString()}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-[11px] font-medium text-stone-600 bg-stone-100 px-2.5 py-1 rounded-md">
-                                {p.category || "Umum"}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-wide ${p.isAvailable ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : 'bg-[#FAF3F0] text-[#B85C38] border border-[#B85C38]/20'}`}>
-                                {p.isAvailable ? 'Ready' : 'Sewa aktif'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex justify-end gap-1.5">
-                                {p.isAvailable && (
-                                  <button onClick={()=>handleOpenTransModal(p)} className="p-2 text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors" title="Catat Sewa">
-                                    <Users size={16}/>
-                                  </button>
-                                )}
-                                <button onClick={()=>handleEditClick(p)} className="p-2 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors" title="Edit Data">
-                                  <Edit3 size={16}/>
-                                </button>
-                                <button onClick={()=>handleDeleteProduct(p._id)} className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Permanen">
-                                  <Trash2 size={16}/>
-                                </button>
-                              </div>
-                            </td>
+                        {filteredAdminProducts.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" className="text-center py-8 text-xs text-stone-400 italic">Tidak ada koleksi ditemukan atau terjadi kendala server.</td>
                           </tr>
-                        ))}
+                        ) : (
+                          filteredAdminProducts.map(p => (
+                            <tr key={p._id} className="hover:bg-amber-50/20 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3.5">
+                                  <img src={p.image || "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=120"} className="w-11 h-14 rounded-md object-cover bg-stone-100 shadow-xs" alt={p.name} />
+                                  <div>
+                                    <p className="font-medium text-stone-900 text-sm">{p.name}</p>
+                                    <p className="text-amber-800 text-xs mt-0.5 font-mono">Rp {p.price?.toLocaleString()}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-[11px] font-medium text-stone-600 bg-stone-100 px-2.5 py-1 rounded-md">
+                                  {p.category || "Umum"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-wide ${p.isAvailable ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50' : 'bg-[#FAF3F0] text-[#B85C38] border border-[#B85C38]/20'}`}>
+                                  {p.isAvailable ? 'Ready' : 'Sewa aktif'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex justify-end gap-1.5">
+                                  {p.isAvailable && (
+                                    <button onClick={()=>handleOpenTransModal(p)} className="p-2 text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors" title="Catat Sewa">
+                                      <Users size={16}/>
+                                    </button>
+                                  )}
+                                  <button onClick={()=>handleEditClick(p)} className="p-2 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors" title="Edit Data">
+                                    <Edit3 size={16}/>
+                                  </button>
+                                  <button onClick={()=>handleDeleteProduct(p._id)} className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Permanen">
+                                    <Trash2 size={16}/>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -344,27 +378,33 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100 text-stone-700">
-                    {transactions.map(t => (
-                      <tr key={t._id} className="hover:bg-stone-50/40 transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="font-medium text-stone-900 text-sm">{t.customerName}</p>
-                          <p className="text-xs text-stone-400 font-mono mt-0.5">{t.customerWhatsapp}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-sm text-stone-800">{t.productName}</p>
-                          <p className="text-[10px] text-amber-800 font-medium uppercase tracking-wider mt-0.5">{t.duration} Hari Durasi</p>
-                        </td>
-                        <td className="px-6 py-4 font-mono font-medium text-sm text-stone-900">
-                          Rp {t.totalPrice?.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-1.5">
-                            <button onClick={()=>handlePrintNota(t)} className="p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-md transition-colors" title="Cetak Nota"><Printer size={16}/></button>
-                            <button onClick={()=>handleCancelTransaction(t)} className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors" title="Batalkan Transaksi"><Trash2 size={16}/></button>
-                          </div>
-                        </td>
+                    {transactions.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="text-center py-8 text-xs text-stone-400 italic">Belum ada riwayat transaksi terdata.</td>
                       </tr>
-                    ))}
+                    ) : (
+                      transactions.map(t => (
+                        <tr key={t._id} className="hover:bg-stone-50/40 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="font-medium text-stone-900 text-sm">{t.customerName}</p>
+                            <p className="text-xs text-stone-400 font-mono mt-0.5">{t.customerWhatsapp}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm text-stone-800">{t.productName}</p>
+                            <p className="text-[10px] text-amber-800 font-medium uppercase tracking-wider mt-0.5">{t.duration} Hari Durasi</p>
+                          </td>
+                          <td className="px-6 py-4 font-mono font-medium text-sm text-stone-900">
+                            Rp {t.totalPrice?.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-1.5">
+                              <button onClick={()=>handlePrintNota(t)} className="p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-md transition-colors" title="Cetak Nota"><Printer size={16}/></button>
+                              <button onClick={()=>handleCancelTransaction(t)} className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors" title="Batalkan Transaksi"><Trash2 size={16}/></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -387,7 +427,7 @@ const AdminDashboard = () => {
             
             <form onSubmit={handleSubmitTransaction} className="p-5 space-y-3.5">
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-1">Nama Pelanggan (Instansi)</label>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block mb-1">Nama Pelanggan</label>
                 <input type="text" className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200 text-sm outline-none focus:bg-white focus:ring-1 focus:ring-amber-600" value={transForm.customerName} onChange={(e)=>setTransForm({...transForm, customerName:e.target.value})} required />
               </div>
               <div>
@@ -420,11 +460,10 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* --- AREA NOTA PREMIUM (HANYA MUNCUL SAAT DI-PRINT) --- */}
+      {/* --- AREA NOTA PREMIUM --- */}
       {printData && (
         <div className="hidden print:flex flex-col fixed inset-0 bg-white p-14 z-9999 text-left text-stone-900 font-sans tracking-wide justify-between h-screen w-screen">
           <div>
-            {/* 1. HEADER TOKO */}
             <div className="flex justify-between items-start border-b-2 border-stone-800 pb-6 mb-8">
               <div>
                 <h1 className="font-serif text-3xl font-bold tracking-wider text-amber-950 uppercase">
@@ -439,7 +478,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* 2. METADATA / INFO INVOICE */}
             <div className="grid grid-cols-2 gap-8 mb-10 text-xs">
               <div>
                 <h4 className="font-bold text-stone-400 uppercase tracking-wider mb-2">Ditujukan Kepada:</h4>
@@ -467,7 +505,6 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* 3. TABEL RINCIAN PRODUK */}
             <div className="mb-8">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
@@ -492,7 +529,6 @@ const AdminDashboard = () => {
               </table>
             </div>
 
-            {/* 4. TOTAL & PEMBAYARAN */}
             <div className="flex justify-end mt-4">
               <div className="w-64 border-t-2 border-stone-800 pt-4 space-y-2 text-right">
                 <div className="flex justify-between text-xs text-stone-500">
@@ -511,7 +547,6 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* 5. FOOTER & SYARAT KETENTUAN */}
           <div className="border-t border-stone-300 pt-6 flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
             <div className="w-2/3">
               <h5 className="font-bold uppercase tracking-wider text-stone-700 mb-1">Syarat & Ketentuan:</h5>
