@@ -113,7 +113,7 @@ const AdminDashboard = () => {
 
   const handleSubmitProduct = async (e) => {
     e.preventDefault();
-    loading(true);
+    setLoading(true); // <-- FIX: Sebelumnya loading(true)
     const url = editId
       ? `${import.meta.env.VITE_API_URL}/api/products/${editId}`
       : `${import.meta.env.VITE_API_URL}/api/products`;
@@ -445,7 +445,8 @@ const AdminDashboard = () => {
               </div>
               <div className="p-5 bg-amber-50 rounded-2xl flex justify-between items-center font-bold">
                 <span className="text-xs uppercase text-amber-900">Total</span>
-                <span className="font-serif text-amber-900 text-xl">Rp {Platform == 'web' ? Number(transForm.totalPrice).toLocaleString('id-ID') : transForm.totalPrice}</span>
+                {/* <-- FIX: Menghapus pengecekan Platform ter-undifined */}
+                <span className="font-serif text-amber-900 text-xl">Rp {Number(transForm.totalPrice).toLocaleString('id-ID')}</span>
               </div>
               <button type="submit" className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-amber-700 transition-colors">Simpan Sewa</button>
             </form>
