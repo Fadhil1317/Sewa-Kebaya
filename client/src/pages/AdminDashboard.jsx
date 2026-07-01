@@ -32,7 +32,10 @@ const AdminDashboard = () => {
 
   const [showTransModal, setShowTransModal] = useState(false);
   
-  // Form input terkunci otomatis ke minimal paket sewa awal (3 hari)
+  // Simpan harga dasar produk yang sedang aktif disewa di state terpisah agar aman
+  const [selectedProductPrice, setSelectedProductPrice] = useState(0);
+
+  // State form sewa terikat ketat paket awal minimal 3 hari
   const [transForm, setTransForm] = useState({
     customerName: "", customerWhatsapp: "", productName: "",
     productId: "", startDate: "", duration: 3, totalPrice: 0
@@ -54,7 +57,7 @@ const AdminDashboard = () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
       if (!res.ok) {
-        setProducts([]); // Jika backend bermasalah (cth: status 500), isi dengan array kosong agar tidak crash
+        setProducts([]);
         return;
       }
       const data = await res.json();
@@ -69,7 +72,7 @@ const AdminDashboard = () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`);
       if (!res.ok) {
-        setTransactions([]); // Jika backend bermasalah, isi dengan array kosong agar tidak crash
+        setTransactions([]);
         return;
       }
       const data = await res.json();
@@ -80,11 +83,9 @@ const AdminDashboard = () => {
     }
   };
 
-  // --- PROTEKSI TOTAL ANTI-CRASH (Biar Tidak Memutih Meski Backend 500) ---
+  // --- PROTEKSI TOTAL ANTI-CRASH ---
   const filteredAdminProducts = useMemo(() => {
-    // Dipastikan variabel harus berupa array utuh sebelum melakukan operasi .filter()
     if (!products || !Array.isArray(products)) return [];
-    
     return products.filter(p => {
       if (!p) return false;
       const name = p.name ? String(p.name).toLowerCase() : "";
@@ -133,7 +134,7 @@ const AdminDashboard = () => {
         alert("Data produk berhasil disimpan! ✨");
       } else {
         if (editId) setProducts(previousProducts);
-        alert("Gagal menyimpan data produk, respon server bermasalah.");
+        alert("Gagal menyimpan data produk.");
       }
     } catch (err) { 
       if (editId) setProducts(previousProducts);
@@ -160,17 +161,21 @@ const AdminDashboard = () => {
     }
   };
 
-  // --- HANDLERS TRANSAKSI MODAL KELIPATAN ---
+  // --- MODIFIKASI UTAMA: AMANKAN HARGA LANGSUNG DARI OBJECT PRODUK YANG DI-KLIK ---
   const handleOpenTransModal = (product) => {
     const basePrice = Number(product.price) || 370000;
+    
+    // Simpan harga asli produk ini ke state pembantu agar tidak hilang atau salah cari ID
+    setSelectedProductPrice(basePrice);
+
     setTransForm({
       customerName: "", 
       customerWhatsapp: "", 
       productName: product.name,
       productId: product._id, 
       startDate: new Date().toISOString().split('T')[0],
-      duration: 3,               // Otomatis diset awal ke paket minimal 3 hari
-      totalPrice: basePrice      // Harga otomatis diset sesuai dengan tarif dasar item
+      duration: 3,               // WAJIB TERKUNCI AWAL DI 3 HARI
+      totalPrice: basePrice      // 3 Hari pertama = 1x Harga Dasar
     });
     setShowTransModal(true);
   };
@@ -194,7 +199,7 @@ const AdminDashboard = () => {
         refreshAllData();
         alert("Sewa tercatat ✅");
       } else {
-        alert("Server backend menolak request (Gagal simpan).");
+        alert("Server backend menolak menyimpan transaksi.");
       }
     } catch (err) { 
       alert("Gagal memproses transaksi karena gangguan koneksi."); 
@@ -415,7 +420,7 @@ const AdminDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <input type="date" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" value={transForm.startDate} onChange={(e)=>setTransForm({...transForm, startDate:e.target.value})} required />
                 
-                {/* VALIDASI AMAN PROPORSIONAL KELIPATAN 3 HARI */}
+                {/* AMAN 100%: Menghitung murni berdasarkan state selectedProductPrice tanpa mencari ulang ID */}
                 <input 
                   type="number" 
                   min="3" 
@@ -431,9 +436,7 @@ const AdminDashboard = () => {
                       return;
                     }
                     
-                    const p = products.find(prod => prod._id === transForm.productId);
-                    const basePrice = p ? Number(p.price) : 370000; 
-                    const calculatedPrice = (d / 3) * basePrice;
+                    const calculatedPrice = (d / 3) * selectedProductPrice;
 
                     setTransForm({
                       ...transForm, 
