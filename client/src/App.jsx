@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
+import { Toaster } from "react-hot-toast"; // Import wrapper notifikasi premium
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import ProductCard from "./components/ProductCard";
@@ -106,6 +107,20 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFCF8] font-sans relative">
+      {/* Konfigurasi Toaster Global dengan style elegan senada tema website */}
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          className: 'font-sans text-xs font-medium text-stone-800 bg-white border border-stone-200 rounded-xl shadow-md p-4',
+          success: {
+            iconTheme: { primary: '#78350f', secondary: '#fff' }
+          },
+          error: {
+            iconTheme: { primary: '#b91c1c', secondary: '#fff' }
+          }
+        }} 
+      />
+
       {!isAdminPage && <Navbar onSearch={setSearchTerm} />}
 
       <div className="grow">
