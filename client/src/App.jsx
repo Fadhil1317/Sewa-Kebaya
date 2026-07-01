@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { Toaster } from "react-hot-toast"; // Import wrapper notifikasi premium
+import { Toaster } from "react-hot-toast";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import ProductCard from "./components/ProductCard";
@@ -107,19 +107,8 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FDFCF8] font-sans relative">
-      {/* Konfigurasi Toaster Global dengan style elegan senada tema website */}
-      <Toaster 
-        position="top-right" 
-        toastOptions={{
-          className: 'font-sans text-xs font-medium text-stone-800 bg-white border border-stone-200 rounded-xl shadow-md p-4',
-          success: {
-            iconTheme: { primary: '#78350f', secondary: '#fff' }
-          },
-          error: {
-            iconTheme: { primary: '#b91c1c', secondary: '#fff' }
-          }
-        }} 
-      />
+      {/* Toast provider premium untuk notifikasi sistem */}
+      <Toaster position="top-right" reverseOrder={false} />
 
       {!isAdminPage && <Navbar onSearch={setSearchTerm} />}
 
@@ -158,10 +147,8 @@ function App() {
 
                     {/* LOGIKA KONDISIONAL BERDASARKAN STATUS AMBIL DATA */}
                     {isLoading ? (
-                      // 1. Tampilkan spinner berputar saat request API sedang berjalan
                       <PageLoader />
                     ) : currentProducts.length > 0 ? (
-                      // 2. Jika loading beres dan ada datanya, langsung muncul semua card
                       <>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 md:gap-12">
                           {currentProducts.map((product) => (
@@ -219,7 +206,6 @@ function App() {
                         )}
                       </>
                     ) : (
-                      // 3. Jika loading beres tapi emang datanya kosong / backend error 500
                       <div className="text-center py-20 italic text-stone-400">
                         Model belum tersedia...
                       </div>
