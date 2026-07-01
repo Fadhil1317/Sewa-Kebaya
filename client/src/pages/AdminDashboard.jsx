@@ -20,7 +20,7 @@ const AdminDashboard = () => {
   const [isFormOpen, setIsFormOpen] = useState(true);
   const [isEditingGlow, setIsEditingGlow] = useState(false);
   
-  // State untuk data print nota
+  // State untuk cetak nota
   const [printData, setPrintData] = useState(null);
 
   // State internal untuk Lazy Loading List Produk
@@ -32,7 +32,7 @@ const AdminDashboard = () => {
 
   const [showTransModal, setShowTransModal] = useState(false);
   
-  // 1. DIKUNCI DI SINI: State awal durasi sewa langsung di-set ke 3 hari
+  // State form sewa (Menggunakan default bawaan industri: paket sewa 3 hari)
   const [transForm, setTransForm] = useState({
     customerName: "", customerWhatsapp: "", productName: "",
     productId: "", startDate: "", duration: 3, totalPrice: 0
@@ -57,7 +57,7 @@ const AdminDashboard = () => {
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) { 
       console.error(err); 
-      setProducts([]);
+      setProducts([]); // Fallback aman jika backend eror
     }
   };
 
@@ -68,26 +68,27 @@ const AdminDashboard = () => {
       setTransactions(Array.isArray(data) ? data : []);
     } catch (err) { 
       console.error(err); 
-      setTransactions([]);
+      setTransactions([]); // Fallback aman jika backend eror
     }
   };
 
-  // --- LOGIKA FILTER AMAN ---
+  // --- PROTEKSI FILTER KEBUTALAN (Mencegah Layar Putih Akibat Eror 500) ---
   const filteredAdminProducts = useMemo(() => {
-    if (!Array.isArray(products)) return [];
+    if (!products || !Array.isArray(products)) return [];
     return products.filter(p => {
-      const name = p?.name ? p.name.toLowerCase() : "";
-      const category = p?.category ? p.category.toLowerCase() : "";
+      if (!p) return false;
+      const name = p.name ? String(p.name).toLowerCase() : "";
+      const category = p.category ? String(p.category).toLowerCase() : "";
       return name.includes(adminSearchTerm.toLowerCase()) || category.includes(adminSearchTerm.toLowerCase());
     });
   }, [products, adminSearchTerm]);
 
-  // --- LOGIKA LAZY LOADING LIST PRODUK ---
+  // --- LAZY LOADING ---
   const displayedProducts = useMemo(() => {
     return filteredAdminProducts.slice(0, visibleProductsCount);
   }, [filteredAdminProducts, visibleProductsCount]);
 
-  // --- HANDLERS ---
+  // --- HANDLERS PRODUK ---
   const handleEditClick = (p) => {
     setEditId(p._id);
     setForm(p);
@@ -97,7 +98,6 @@ const AdminDashboard = () => {
     setTimeout(() => setIsEditingGlow(false), 3000);
   };
 
-  // Optimistic Update untuk Simpan/Edit Produk
   const handleSubmitProduct = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -132,7 +132,6 @@ const AdminDashboard = () => {
     setLoading(false);
   };
 
-  // Optimistic Update untuk Hapus Produk
   const handleDeleteProduct = async (id) => {
     if (window.confirm("Hapus produk ini secara permanen?")) {
       const previousProducts = [...products];
@@ -151,7 +150,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // 2. DIKUNCI DI SINI: Saat modal dibuka, isi duration dipaksa bernilai 3 hari
+  // --- HANDLERS TRANSAKSI DAN MODAL KELIPATAN ---
   const handleOpenTransModal = (product) => {
     setTransForm({
       customerName: "", 
@@ -159,8 +158,8 @@ const AdminDashboard = () => {
       productName: product.name,
       productId: product._id, 
       startDate: new Date().toISOString().split('T')[0],
-      duration: 3,               // Dikunci ke paket minimal 3 hari
-      totalPrice: product.price  // Total awal adalah harga dasar karena harga dasar = tarif paket 3 hari
+      duration: 3,               // Set default awal pemicu komponen ke 3 hari
+      totalPrice: Number(product.price) || 0 // Total awal setara dengan 1x harga dasar paket
     });
     setShowTransModal(true);
   };
@@ -183,8 +182,12 @@ const AdminDashboard = () => {
         setShowTransModal(false);
         refreshAllData();
         alert("Sewa tercatat ✅");
+      } else {
+        alert("Gagal memproses transaksi. Cek kesesuaian data schema backend.");
       }
-    } catch (err) { alert("Gagal proses sewa"); }
+    } catch (err) { 
+      alert("Gagal proses sewa karena masalah jaringan."); 
+    }
   };
 
   const handleCancelTransaction = async (t) => {
@@ -240,8 +243,8 @@ const AdminDashboard = () => {
           <button className="lg:hidden p-2" onClick={() => setIsSidebarOpen(true)}><Menu/></button>
           <h2 className="hidden md:block font-serif text-lg">{activeTab === 'katalog' ? 'Manajemen Koleksi' : 'Log Transaksi'}</h2>
           <div className="flex gap-4 lg:gap-8">
-            <div className="text-right"><p className="text-[10px] text-stone-400 uppercase font-bold">Produk</p><p className="lg:text-xl font-serif text-amber-900">{products.length}</p></div>
-            <div className="text-right border-l pl-4 lg:pl-8 border-stone-200"><p className="text-[10px] text-stone-400 uppercase font-bold">Transaksi</p><p className="lg:text-xl font-serif text-amber-900">{transactions.length}</p></div>
+            <div className="text-right"><p className="text-[10px] text-stone-400 uppercase font-bold">Produk</p><p className="lg:text-xl font-serif text-amber-900">{products ? products.length : 0}</p></div>
+            <div className="text-right border-l pl-4 lg:pl-8 border-stone-200"><p className="text-[10px] text-stone-400 uppercase font-bold">Transaksi</p><p className="lg:text-xl font-serif text-amber-900">{transactions ? transactions.length : 0}</p></div>
           </div>
         </header>
 
@@ -283,7 +286,7 @@ const AdminDashboard = () => {
                 </div>
               </section>
 
-              {/* TABLE SECTION DENGAN LAZY LOADING */}
+              {/* TABLE SECTION DENGAN INTEGRASI LAZY LOADING */}
               <section className="xl:col-span-8 order-2 xl:order-1 space-y-6">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
@@ -332,11 +335,15 @@ const AdminDashboard = () => {
                             </td>
                           </tr>
                         ))}
+                        {displayedProducts.length === 0 && (
+                          <tr>
+                            <td colSpan="4" className="px-8 py-10 text-center text-stone-400 text-sm">Tidak ada data produk ditemukan.</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Tombol Lazy Loading */}
                   {filteredAdminProducts.length > visibleProductsCount && (
                     <div className="p-4 bg-stone-50/50 text-center border-t border-stone-100">
                       <button
@@ -370,6 +377,11 @@ const AdminDashboard = () => {
                         </td>
                       </tr>
                     ))}
+                    {transactions.length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="px-8 py-10 text-center text-stone-400 text-sm">Tidak ada log transaksi.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -378,40 +390,39 @@ const AdminDashboard = () => {
         </main>
       </div>
 
-      {/* --- MODAL TRANSAKSI (SISTEM KELIPATAN PAKET 3 HARI) --- */}
+      {/* --- MODAL TRANSAKSI (SISTEM KELIPATAN PAKET MINIMAL 3 HARI) --- */}
       {showTransModal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm print:hidden">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden">
             <div className="bg-stone-950 p-6 lg:p-8 text-white flex justify-between items-center">
               <div><h3 className="text-xl font-serif">Catat Sewa</h3><p className="text-stone-400 text-[10px] uppercase mt-1">{transForm.productName}</p></div>
-              <button onClick={()=>setShowTransModal(false)}><X/></button>
+              <button type="button" onClick={()=>setShowTransModal(false)}><X/></button>
             </div>
             <form onSubmit={handleSubmitTransaction} className="p-6 lg:p-8 space-y-4">
-              <input type="text" placeholder="Nama Pelanggan" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.customerName} onChange={(e)=>setTransForm({...transForm, customerName:e.target.value})} required />
-              <input type="text" placeholder="WhatsApp" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.customerWhatsapp} onChange={(e)=>setTransForm({...transForm, customerWhatsapp:e.target.value})} required />
+              <input type="text" placeholder="Nama Pelanggan" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" value={transForm.customerName} onChange={(e)=>setTransForm({...transForm, customerName:e.target.value})} required />
+              <input type="text" placeholder="WhatsApp" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" value={transForm.customerWhatsapp} onChange={(e)=>setTransForm({...transForm, customerWhatsapp:e.target.value})} required />
               <div className="grid grid-cols-2 gap-4">
-                <input type="date" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" value={transForm.startDate} onChange={(e)=>setTransForm({...transForm, startDate:e.target.value})} required />
+                <input type="date" className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" value={transForm.startDate} onChange={(e)=>setTransForm({...transForm, startDate:e.target.value})} required />
                 
-                {/* 3. DIKUNCI DI SINI: Atribut min, step, serta validasi on-the-fly kelipatan 3 hari */}
+                {/* VALIDASI KELIPATAN 3 HARI SECARA LIVE MANDIRI */}
                 <input 
                   type="number" 
                   min="3" 
                   step="3" 
                   placeholder="Hari" 
-                  className="w-full p-4 bg-stone-50 rounded-2xl border text-sm" 
+                  className="w-full p-4 bg-stone-50 rounded-2xl border text-sm outline-none focus:ring-2 focus:ring-amber-500" 
                   value={transForm.duration} 
                   onChange={(e)=>{
                     const d = parseInt(e.target.value) || 0;
                     
-                    // Filter ekstra: jika user mengetik angka manual < 3 atau bukan kelipatan 3, jangan kalkulasi dulu harganya
                     if (d < 3 || d % 3 !== 0) {
                       setTransForm({ ...transForm, duration: d });
                       return;
                     }
                     
                     const p = products.find(prod => prod._id === transForm.productId);
-                    // Rumus proporsional kelipatan: (Durasi yang dipilih / paket 3 hari) * Harga Dasar
-                    const calculatedPrice = (d / 3) * (p?.price || 0);
+                    const basePrice = p ? Number(p.price) : 370000; // Menggunakan harga terdeteksi atau fallback default
+                    const calculatedPrice = (d / 3) * basePrice;
 
                     setTransForm({
                       ...transForm, 
@@ -424,9 +435,9 @@ const AdminDashboard = () => {
               </div>
               <div className="p-5 bg-amber-50 rounded-2xl flex justify-between items-center font-bold">
                 <span className="text-xs uppercase text-amber-900">Total</span>
-                <span className="font-serif text-amber-900 text-xl">Rp {transForm.totalPrice.toLocaleString('id-ID')}</span>
+                <span className="font-serif text-amber-900 text-xl">Rp {Number(transForm.totalPrice).toLocaleString('id-ID')}</span>
               </div>
-              <button type="submit" className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg">Simpan Sewa</button>
+              <button type="submit" className="w-full py-4 bg-amber-600 text-white rounded-2xl font-bold uppercase text-xs tracking-widest shadow-lg hover:bg-amber-700 transition-colors">Simpan Sewa</button>
             </form>
           </div>
         </div>
@@ -436,7 +447,7 @@ const AdminDashboard = () => {
       {printData && (
         <div className="hidden print:flex flex-col fixed inset-0 bg-white p-14 z-9999 text-left text-stone-900 font-sans tracking-wide justify-between h-screen w-screen">
           <div>
-            {/* Header Nota */}
+            {/* Header Toko */}
             <div className="flex justify-between items-start border-b-2 border-stone-800 pb-6 mb-8">
               <div>
                 <h1 className="font-serif text-3xl font-bold tracking-wider text-amber-950 uppercase">
@@ -479,7 +490,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* Rincian Sewa */}
+            {/* Tabel Rincian */}
             <div className="mb-8">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
@@ -523,7 +534,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* S&K Footer */}
+          {/* S&K */}
           <div className="border-t border-stone-300 pt-6 flex justify-between items-end text-[10px] text-stone-500 leading-relaxed">
             <div className="w-2/3">
               <h5 className="font-bold uppercase tracking-wider text-stone-700 mb-1">Syarat & Ketentuan:</h5>
@@ -539,10 +550,8 @@ const AdminDashboard = () => {
               <p className="uppercase font-bold tracking-widest text-stone-400 text-center">Hormat Kami</p>
             </div>
           </div>
-
         </div>
       )}
-
     </div>
   );
 };
